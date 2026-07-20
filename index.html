@@ -483,11 +483,26 @@ class Component extends DCLogic {
 
   onAdminLogin = (e) => {
     e.preventDefault();
-    if (this.state.adminUser === "adminhavok" && this.state.adminPass === "havok2026") {
-      this.setState({ adminLoggedIn: true, adminError: "" });
-    } else {
-      this.setState({ adminError: "Usuario o contraseña incorrectos." });
-    }
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
+    this.setState({ adminError: "Verificando..." });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "adminLogin", user, pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({ adminLoggedIn: true, adminError: "" });
+        } else {
+          this.setState({ adminError: "Usuario o contraseña incorrectos." });
+        }
+      })
+      .catch(() => {
+        this.setState({ adminError: "No se pudo verificar. Probá de nuevo." });
+      });
   };
 
   adminLogout = () => {
