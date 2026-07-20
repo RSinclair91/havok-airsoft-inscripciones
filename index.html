@@ -322,6 +322,8 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+const INSCRIPCIONES_ENDPOINT = "https://script.google.com/macros/s/AKfycbwc79KUH_K8PfnjHxuq5RFSIdcoPOscYMLWxf08Ttn2UZNkfMwSeaDIKIAjrCA-eyR5Fg/exec";
+
 const REGLAMENTO_SECCIONES = [
   { heading: "1. Requisitos de Ingreso", items: [
     "Edad mínima: 18 años. Menores de 18 solo con autorización firmada por tutor y casco facial completo obligatorio.",
@@ -444,6 +446,20 @@ class Component extends DCLogic {
       estadoClass: "tag tag-outline"
     };
 
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        codigo,
+        nombre: f.nombre || "(sin nombre)",
+        edad: f.edad,
+        tipo: nuevaFila.tipoLabel,
+        experiencia: nuevaFila.experienciaLabel,
+        estado: "Pendiente"
+      })
+    }).catch(() => {});
+
     this.setState(s => ({
       submitted: true,
       codigoGenerado: codigo,
@@ -502,7 +518,7 @@ class Component extends DCLogic {
       onAdminFieldChange: this.onAdminFieldChange,
       onAdminLogin: this.onAdminLogin,
       adminLogout: this.adminLogout,
-      sheetUrl: "https://docs.google.com/spreadsheets/d/1voPtG0Ij_dXmLubsSTu2pZdOIo2Xh_GBw6uMNpZR7zs/edit",
+      sheetUrl: "https://docs.google.com/spreadsheets/d/1GyTeYw1uLySXn9UhW8YSmuWzfQ_qg_orwT8uSMfFWgU/edit",
       reglamentoSecciones: REGLAMENTO_SECCIONES,
       reglas: REGLAS,
       form: f,
