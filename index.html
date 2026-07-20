@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./nocturne-styles.css">
+<style>
+  body { margin: 0; }
+  a:hover { color: var(--color-accent-400); }
+  :root {
+    --color-bg: #17140f;
+    --color-surface: #241f18;
+    --color-text: #eee7d8;
+    --color-accent: #c9a15a;
+    --color-accent-2: #c9a15a;
+    --color-divider: color-mix(in srgb, #eee7d8 16%, transparent);
+    --color-neutral-100: #f7f3ea; --color-neutral-200: #e9e1cf; --color-neutral-300: #d2c7ac;
+    --color-neutral-400: #b3a686; --color-neutral-500: #948866; --color-neutral-600: #766c50;
+    --color-neutral-700: #59503a; --color-neutral-800: #3d3626; --color-neutral-900: #262115;
+    --color-accent-100: #faf3e2; --color-accent-200: #f1e0b8; --color-accent-300: #e4c988;
+    --color-accent-400: #d6b16a; --color-accent-500: #c9a15a; --color-accent-600: #a5814a;
+    --color-accent-700: #7c6139; --color-accent-800: #574327; --color-accent-900: #362a19;
+    --color-accent-2-100: #faf3e2; --color-accent-2-200: #f1e0b8; --color-accent-2-300: #e4c988;
+    --color-accent-2-400: #d6b16a; --color-accent-2-500: #c9a15a; --color-accent-2-600: #a5814a;
+    --color-accent-2-700: #7c6139; --color-accent-2-800: #574327; --color-accent-2-900: #362a19;
+    --color-section: #2b3a42;
+    --color-section-glow: #3a4d57;
+    --color-section-ghost: #4f6873;
+  }
+</style>
+</helmet>
+
+<div style="min-height:100vh;">
+
+<sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{ adminLoggedIn }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1100px;margin:0 auto;padding:var(--space-8) var(--space-6) 80px;">
+    <div class="nav" style="padding-left:0;padding-right:0;margin-bottom:var(--space-8);">
+      <div class="nav-brand">Panel admin — Havok</div>
+      <a href="{{ sheetUrl }}" target="_blank" class="btn btn-primary">Abrir Google Sheet</a>
+      <button class="btn btn-secondary" onClick="{{ adminLogout }}">Cerrar sesión</button>
+      <button class="btn btn-secondary" onClick="{{ goToLanding }}">← Volver al sitio</button>
+    </div>
+
+    <div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-6);flex-wrap:wrap;">
+      <div class="card elev-sm" style="flex:1;min-width:160px;">
+        <div class="card-kicker">Total inscriptos</div>
+        <div style="font-family:var(--font-heading);font-size:28px;font-weight:600;">{{ totalInscripciones }}</div>
+      </div>
+      <div class="card elev-sm" style="flex:1;min-width:160px;">
+        <div class="card-kicker">Miembros (cuota)</div>
+        <div style="font-family:var(--font-heading);font-size:28px;font-weight:600;">{{ totalMiembros }}</div>
+      </div>
+      <div class="card elev-sm" style="flex:1;min-width:160px;">
+        <div class="card-kicker">Eventos puntuales</div>
+        <div style="font-family:var(--font-heading);font-size:28px;font-weight:600;">{{ totalEventos }}</div>
+      </div>
+    </div>
+
+    <div class="card elev-sm" style="padding:0;overflow-x:auto;">
+      <table class="table" style="min-width:760px;">
+        <thead>
+          <tr>
+            <th style="padding-left:var(--space-4);">Código</th>
+            <th>Nombre</th>
+            <th>Edad</th>
+            <th>Tipo</th>
+            <th>Experiencia</th>
+            <th style="padding-right:var(--space-4);">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ inscripciones }}" as="row" hint-placeholder-count="3">
+            <tr>
+              <td style="padding-left:var(--space-4);font-family:ui-monospace,monospace;color:var(--color-neutral-400);">{{ row.codigo }}</td>
+              <td style="font-weight:500;">{{ row.nombre }}</td>
+              <td>{{ row.edad }}</td>
+              <td>{{ row.tipoLabel }}</td>
+              <td style="color:var(--color-neutral-400);">{{ row.experienciaLabel }}</td>
+              <td style="padding-right:var(--space-4);"><span class="{{ row.estadoClass }}">{{ row.estadoLabel }}</span></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ notAdminLoggedIn }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:400px;margin:0 auto;padding:120px 24px;">
+    <div class="card elev-md" style="padding:var(--space-8);gap:var(--space-4);">
+      <div style="text-align:center;margin-bottom:var(--space-2);">
+        <div class="nav-brand" style="margin-right:0;">Panel admin — Havok</div>
+        <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Ingresá con tus credenciales de administrador.</p>
+      </div>
+      <form onSubmit="{{ onAdminLogin }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+        <div class="field">
+          <label>Usuario</label>
+          <input class="input" name="adminUser" value="{{ adminUser }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input class="input" type="password" name="adminPass" value="{{ adminPass }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}">
+        </div>
+        <sc-if value="{{ adminError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ adminError }}</div>
+        </sc-if>
+        <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ goToLanding }}" style="align-self:center;">Volver al sitio</button>
+      </form>
+    </div>
+  </div>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{ isReglamento }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:760px;margin:0 auto;padding:var(--space-8) var(--space-6) 100px;">
+    <div class="nav" style="padding-left:0;padding-right:0;margin-bottom:var(--space-6);">
+      <div class="nav-brand">HAVOK - Airsoft Team</div>
+      <button class="btn btn-secondary" onClick="{{ goToLanding }}">← Volver al sitio</button>
+    </div>
+    <div class="card-kicker" style="margin-bottom:var(--space-2);">Documento oficial</div>
+    <h1 style="font-size:32px;margin:0 0 var(--space-2);">Reglamento interno — Equipo Airsoft Havok</h1>
+    <p style="color:var(--color-neutral-300);margin:0 0 var(--space-8);">Objetivo del equipo: mantener un grupo coordinado, activo y con buen ambiente para partidas de airsoft, milsim y entrenamientos. La prioridad es la seguridad, el compañerismo y la mejora constante.</p>
+
+    <sc-for list="{{ reglamentoSecciones }}" as="sec" hint-placeholder-count="9">
+      <div style="margin-bottom:var(--space-8);">
+        <h3 style="color:var(--color-accent-300);margin:0 0 var(--space-3);">{{ sec.heading }}</h3>
+        <sc-if value="{{ sec.intro }}" hint-placeholder-val="{{ false }}">
+          <div style="font-weight:600;margin-bottom:var(--space-2);">{{ sec.intro }}</div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <sc-for list="{{ sec.items }}" as="item" hint-placeholder-count="3">
+            <div class="card elev-sm" style="flex-direction:row;align-items:flex-start;">
+              <span style="color:var(--color-accent);font-size:14px;flex-shrink:0;line-height:1.5;">▸</span>
+              <span style="font-size:14px;color:var(--color-neutral-200);">{{ item }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+
+    <div class="card elev-md" style="margin-top:var(--space-4);">
+      <h3 style="margin:0 0 var(--space-2);">Conformidad</h3>
+      <p style="color:var(--color-neutral-300);margin:0;">Al firmar, declaro haber leído, comprendido y aceptado el presente Reglamento Interno del Equipo de Airsoft Havok, comprometiéndome a cumplirlo en su totalidad.</p>
+    </div>
+
+    <div style="margin-top:var(--space-8);text-align:center;">
+      <button class="btn btn-primary" onClick="{{ goToLanding }}" style="font-size:15px;padding:var(--space-3) var(--space-6);">Volver a la ficha de inscripción</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+<div>
+  <header class="nav" style="position:sticky;top:0;z-index:20;background:color-mix(in srgb, var(--color-bg) 90%, transparent);backdrop-filter:blur(8px);max-width:1180px;margin:0 auto;padding-left:var(--space-6);padding-right:var(--space-6);">
+    <div class="nav-brand">HAVOK - Airsoft Team</div>
+    <a href="#nosotros">Nosotros</a>
+    <a href="#reglamento" onClick="{{ goToReglamento }}">Reglamento</a>
+    <a href="#inscripcion" class="btn btn-primary">Inscribite</a>
+    <button class="btn btn-secondary" onClick="{{ goToAdmin }}">Admin</button>
+  </header>
+
+  <section style="position:relative;padding:100px var(--space-6) 90px;overflow:hidden;background:linear-gradient(160deg, var(--color-section) 0%, var(--color-bg) 55%);">
+    <div style="max-width:1180px;margin:0 auto;">
+      <div class="tag tag-outline" style="margin-bottom:var(--space-4);">Río Gallegos · Santa Cruz</div>
+      <h1 style="font-size:clamp(38px,6vw,64px);max-width:680px;margin:0 0 var(--space-4);">HAVOK - Airsoft Team</h1>
+      <p style="font-size:17px;max-width:520px;color:var(--color-neutral-300);margin:0 0 var(--space-6);">Sumate al equipo. Inscribite a nuestras próximas partidas o convertite en miembro estable de la agrupación en Río Gallegos.</p>
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;">
+        <a href="#inscripcion" class="btn btn-primary" style="font-size:15px;padding:var(--space-3) var(--space-6);">Inscribirme ahora</a>
+        <a href="#nosotros" class="btn btn-secondary" style="font-size:15px;padding:var(--space-3) var(--space-6);">Conocer el equipo</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="nosotros" style="padding:90px var(--space-6);">
+    <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8);align-items:center;">
+      <figure style="aspect-ratio:4/3;background:var(--color-surface);display:flex;align-items:center;justify-content:center;padding:var(--space-6);">
+        <img src="./assets/havok-escudo.jpeg" alt="Escudo Havok Airsoft Team" style="max-width:100%;max-height:100%;object-fit:contain;">
+      </figure>
+      <div>
+        <div class="card-kicker" style="margin-bottom:var(--space-2);">Quiénes somos</div>
+        <h2 style="margin:0 0 var(--space-3);">Una comunidad táctica en el fin del mundo</h2>
+        <p style="color:var(--color-neutral-300);">Havok Airsoft Team nuclea a jugadores de Río Gallegos que comparten la pasión por el airsoft: estrategia, trabajo en equipo y respeto por las reglas de seguridad. Organizamos partidas regulares y sumamos gente nueva en cada temporada.</p>
+        <p style="color:var(--color-neutral-300);">No importa si es tu primera partida o ya tenés experiencia: hay un lugar para vos en la unidad.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="reglamento" style="padding:90px var(--space-6);background:var(--color-surface);">
+    <div style="max-width:820px;margin:0 auto;">
+      <div class="card-kicker" style="margin-bottom:var(--space-2);">Reglamento y seguridad</div>
+      <h2 style="margin:0 0 var(--space-8);">Antes de anotarte, leé esto</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <sc-for list="{{ reglas }}" as="regla" hint-placeholder-count="6">
+          <div class="card elev-sm" style="flex-direction:row;align-items:flex-start;">
+            <span style="color:var(--color-accent);font-size:16px;flex-shrink:0;line-height:1.4;">✓</span>
+            <span style="font-size:14px;color:var(--color-neutral-200);">{{ regla }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="text-align:center;margin-top:var(--space-8);">
+        <button class="btn btn-secondary" onClick="{{ goToReglamento }}">Ver reglamento completo</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="inscripcion" style="padding:90px var(--space-6) 110px;">
+    <div style="max-width:680px;margin:0 auto;">
+      <div class="card-kicker" style="margin-bottom:var(--space-2);text-align:center;">Ficha de inscripción</div>
+      <h2 style="margin:0 0 var(--space-8);text-align:center;">Sumate a la unidad</h2>
+
+      <sc-if value="{{ submitted }}" hint-placeholder-val="{{ false }}">
+        <div class="card elev-md" style="text-align:center;padding:var(--space-8) var(--space-6);align-items:center;">
+          <span style="font-size:36px;color:var(--color-accent);">✓</span>
+          <h3 style="margin:var(--space-2) 0 0;">Inscripción recibida</h3>
+          <p class="text-muted" style="margin:0;">Tu código de inscripción es</p>
+          <div style="font-family:ui-monospace,monospace;font-size:22px;font-weight:700;color:var(--color-accent-300);letter-spacing:0.05em;">{{ codigoGenerado }}</div>
+          <p style="color:var(--color-neutral-300);font-size:13px;max-width:420px;">{{ mensajeConfirmacion }}</p>
+          <button class="btn btn-secondary" onClick="{{ resetForm }}">Cargar otra inscripción</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ notSubmitted }}" hint-placeholder-val="{{ true }}">
+      <form onSubmit="{{ onSubmit }}" class="card elev-md" style="padding:var(--space-8);gap:var(--space-6);">
+
+        <div class="field">
+          <label>Tipo de inscripción</label>
+          <div class="seg" style="width:100%;">
+            <label class="seg-opt" style="flex:1;justify-content:center;">
+              <input type="radio" name="tipo" value="evento" checked="{{ tipoIsEvento }}" onChange="{{ onFieldChange }}">Evento puntual
+            </label>
+            <label class="seg-opt" style="flex:1;justify-content:center;" data-om-label="Inscripción para miembro del equipo">
+              <input type="radio" name="tipo" value="miembro" checked="{{ tipoIsMiembro }}" onChange="{{ onFieldChange }}">Miembro del equipo
+            </label>
+          </div>
+          <sc-if value="{{ tipoIsMiembro }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-accent" style="margin-top:var(--space-3);white-space:normal;padding:var(--space-2) var(--space-3);">La membresía tiene cuota mensual. El pago se coordina por transferencia o efectivo una vez aprobada tu inscripción.</div>
+          </sc-if>
+        </div>
+
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-neutral-500);margin-bottom:var(--space-3);">Datos personales</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+            <div class="field" style="grid-column:span 2;"><label>Nombre y apellido</label><input class="input" name="nombre" value="{{ form.nombre }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="field"><label>DNI</label><input class="input" name="dni" value="{{ form.dni }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="field"><label>Edad</label><input class="input" type="number" name="edad" value="{{ form.edad }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="field"><label>Teléfono</label><input class="input" name="telefono" value="{{ form.telefono }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="field"><label>Email</label><input class="input" type="email" name="email" value="{{ form.email }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+          </div>
+        </div>
+
+        <sc-if value="{{ isMinor }}" hint-placeholder-val="{{ false }}">
+          <div class="card" style="background:var(--color-accent-900);gap:var(--space-3);">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent-300);">Autorización de adulto responsable (menor de edad)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+              <div class="field"><label>Nombre del adulto responsable</label><input class="input" name="autNombre" value="{{ form.autNombre }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}"></div>
+              <div class="field"><label>DNI del adulto responsable</label><input class="input" name="autDni" value="{{ form.autDni }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}"></div>
+            </div>
+            <label class="radio" style="align-items:flex-start;">
+              <input type="checkbox" name="autAceptado" checked="{{ form.autAceptado }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}">
+              <span class="dot" style="border-radius:4px;"></span>
+              <span style="font-size:13px;">Autorizo la participación del menor en las actividades de la agrupación bajo mi responsabilidad.</span>
+            </label>
+          </div>
+        </sc-if>
+
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-neutral-500);margin-bottom:var(--space-3);">Contacto de emergencia</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-4);">
+            <div class="field"><label>Nombre</label><input class="input" name="emNombre" value="{{ form.emNombre }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="field"><label>Teléfono</label><input class="input" name="emTelefono" value="{{ form.emTelefono }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="field"><label>Relación</label><input class="input" name="emRelacion" value="{{ form.emRelacion }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Experiencia en airsoft</label>
+          <select class="input" name="experiencia" value="{{ form.experiencia }}" onChange="{{ onFieldChange }}" required="{{ true }}">
+            <option value="">Seleccioná una opción</option>
+            <option value="ninguna">Ninguna, primera vez</option>
+            <option value="principiante">Principiante (algunas partidas)</option>
+            <option value="intermedio">Intermedio</option>
+            <option value="avanzado">Avanzado</option>
+          </select>
+        </div>
+
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-neutral-500);margin-bottom:var(--space-3);">Equipo propio</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+            <label class="radio"><input type="checkbox" name="equipoReplica" checked="{{ form.equipoReplica }}" onChange="{{ onFieldChange }}"><span class="dot" style="border-radius:4px;"></span>Tengo réplica propia</label>
+            <label class="radio"><input type="checkbox" name="equipoProteccion" checked="{{ form.equipoProteccion }}" onChange="{{ onFieldChange }}"><span class="dot" style="border-radius:4px;"></span>Tengo protección (lentes/máscara)</label>
+            <label class="radio"><input type="checkbox" name="equipoNinguno" checked="{{ form.equipoNinguno }}" onChange="{{ onFieldChange }}"><span class="dot" style="border-radius:4px;"></span>No tengo equipo, necesito prestado</label>
+          </div>
+        </div>
+
+        <label class="radio" style="align-items:flex-start;border-top:1px solid var(--color-divider);padding-top:var(--space-6);">
+          <input type="checkbox" name="reglamentoAceptado" checked="{{ form.reglamentoAceptado }}" onChange="{{ onFieldChange }}" required="{{ true }}">
+          <span class="dot" style="border-radius:4px;"></span>
+          <span style="font-size:14px;">Leí y acepto el <a href="#reglamento" onClick="{{ goToReglamento }}">reglamento y las normas de seguridad</a>, y deslindo a Havok Airsoft Team de responsabilidad por el uso indebido de equipamiento.</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-block" style="font-size:15px;padding:var(--space-4);">Confirmar inscripción</button>
+      </form>
+      </sc-if>
+    </div>
+  </section>
+
+  <footer style="padding:var(--space-8) var(--space-6);text-align:center;border-top:1px solid var(--color-divider);">
+    <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;margin-bottom:var(--space-1);">HAVOK - Airsoft Team</div>
+    <div class="text-muted" style="font-size:12px;">Río Gallegos, Santa Cruz, Argentina</div>
+  </footer>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const REGLAMENTO_SECCIONES = [
+  { heading: "1. Requisitos de Ingreso", items: [
+    "Edad mínima: 18 años. Menores de 18 solo con autorización firmada por tutor y casco facial completo obligatorio.",
+    "Equipamiento básico: Réplica con crono <1.5J para fusilero, protección ocular ANSI Z87.1 o EN166 homologada, botas, y uniforme según camuflaje del equipo.",
+    "Período de prueba: 3 partidas oficiales como 'recluta'. Se evalúa actitud, seguridad y trabajo en equipo.",
+    "Compromiso: Firmar que leíste y aceptás este reglamento."
+  ]},
+  { heading: "2. Asistencia y Actividad Mínima", items: [
+    "Partidas oficiales: (Liga) Mínimo 1 al mes. El calendario se define a principio de mes por votación.",
+    "Entrenamientos: 1 cada 15 días, suman puntos de actividad.",
+    "Justificación: Si no podés ir, avisar 48h antes en el grupo. 3 faltas sin aviso = baja automática.",
+    "Inactividad: Más de 1 mes sin participar sin justificar = pasás a 'reserva'. 1 mes más = baja del equipo."
+  ]},
+  { heading: "3. Comunicación y Coordinación", items: [
+    "Canal oficial: Grupo de WhatsApp/Telegram solo para temas del equipo. Nada de spam, política o religión.",
+    "Confirmación: Cuando se propone fecha, todos responden con 'Voy' o 'No voy' en 24h. El que no responde 2 veces seguidas tiene llamado de atención.",
+    "Radio: Durante partidas será obligatorio llevar radio PMR canal/subtono a definir. Se usa lenguaje corto y claro.",
+    "Roles: Cada miembro tiene un rol principal: líder, fusilero, apoyo, DMR, médico, radio. En cada partida se respeta la cadena de mando."
+  ]},
+  { heading: "4. Seguridad y Conducta en Campo", items: [
+    "Regla #1: Protección ocular puesta 100% del tiempo en zona caliente. El que se la saca = expulsión de la partida.",
+    "Potencias y distancias: <1.14J sin distancia mínima; 1.14J a 1.5J: 5m mínima; DMR 1.6J-2.3J: 20m mínima + secundario obligatorio; Sniper hasta 3J: 30m mínima + secundario obligatorio.",
+    "Honor: El airsoft se basa en cantar la baja. Duda = baja. 2 reportes de inmortal = suspensión.",
+    "CQB: En edificios siempre en semi. Nada de full auto a menos de 10m.",
+    "Respeto: Cero tolerancia a insultos, discriminación o peleas. Se corta la acción y se habla."
+  ]},
+  { heading: "5. Equipamiento y Estética", items: [
+    "Uniformidad: El equipo usa patrón Multicam/Woodland. Para jugar oficial hay que respetar los colores para evitar fuego amigo.",
+    "Mantenimiento: Cada uno es responsable de que su réplica funcione. Llegar con réplica rota cuenta como falta.",
+    "Identificación: Parche del equipo en derecho y porta rango en chaleco obligatorio en partidas oficiales."
+  ]},
+  { heading: "6. Estructura y Roles Administrativos", intro: "Líderes Honorarios:", items: [
+    "Capitán: Coordina fechas, habla con otros equipos, toma decisiones finales.",
+    "Sargento/Logística: Controla asistencia, inventario común, crono.",
+    "Tesorero: Si hay cuota mensual para cajas, BBs, alquileres. Máx $5000 ARS/mes. Todo con rendición.",
+    "Reclutador: Evalúa nuevos ingresos con voto de 2 miembros antiguos."
+  ]},
+  { heading: "7. Sanciones", items: [
+    "Llamado de atención: Verbal, por faltas leves como llegar tarde o no confirmar.",
+    "Suspensión: 1 partida sin jugar, por faltas de seguridad o 3 llamados de atención.",
+    "Expulsión: Por robar, pelear, sacarse protección ocular a propósito, o 2 suspensiones en 6 meses."
+  ]},
+  { heading: "8. Altas y Bajas", items: [
+    "Baja voluntaria: Avisar con 1 semana de anticipación y devolver material del equipo.",
+    "Reingreso: Quien se fue por inactividad puede volver, pero arranca como recluta de nuevo."
+  ]},
+  { heading: "9. Economía del Equipo", items: [
+    "Cuota: $3000 ARS mensuales opcionales para fondo común: BBs para entrenamientos, parches, alquiler de campos.",
+    "No es obligatorio: Pero el que no aporta no usa recursos del fondo."
+  ]}
+];
+
+const REGLAS = [
+  "Uso obligatorio de lentes de protección homologados en todo momento dentro del campo.",
+  "Distancia de tiro se limita a mas de 5 mts para asalto y mas de 20 mts para sniper.",
+  "Base o zona segura fuera del campo.",
+  "Edad mínima 18 años; menores requieren autorización de un adulto responsable.",
+  "Respeto a la regla de \"hit = fuera\" y buena fe en todo momento.",
+  "Prohibido el uso de réplicas o munición distinta a BB's de 6mm de material plástico."
+];
+
+function makeCodigo(n) {
+  return "HVK-2026-" + String(n).padStart(4, "0");
+}
+
+const emptyForm = () => ({
+  tipo: "evento",
+  nombre: "", dni: "", edad: "", telefono: "", email: "",
+  emNombre: "", emTelefono: "", emRelacion: "",
+  experiencia: "",
+  equipoReplica: false, equipoProteccion: false, equipoNinguno: false,
+  autNombre: "", autDni: "", autAceptado: false,
+  reglamentoAceptado: false
+});
+
+class Component extends DCLogic {
+  state = {
+    page: "landing",
+    form: emptyForm(),
+    submitted: false,
+    codigoGenerado: "",
+    nextCodigo: 4,
+    adminLoggedIn: false,
+    adminUser: "",
+    adminPass: "",
+    adminError: "",
+    inscripciones: [
+      { codigo: makeCodigo(1), nombre: "Martín Aguilera", edad: 27, tipoLabel: "Miembro", experienciaLabel: "Avanzado", estadoLabel: "Aprobado", estadoClass: "tag tag-accent" },
+      { codigo: makeCodigo(2), nombre: "Sofía Ramírez", edad: 19, tipoLabel: "Evento puntual", experienciaLabel: "Principiante", estadoLabel: "Pendiente", estadoClass: "tag tag-outline" },
+      { codigo: makeCodigo(3), nombre: "Lucas Ferreyra", edad: 15, tipoLabel: "Evento puntual", experienciaLabel: "Ninguna", estadoLabel: "Pendiente", estadoClass: "tag tag-outline" }
+    ]
+  };
+
+  onFieldChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (name === "tipo") {
+      this.setState(s => ({ form: { ...s.form, tipo: value } }));
+      return;
+    }
+    const v = type === "checkbox" ? checked : value;
+    this.setState(s => ({ form: { ...s.form, [name]: v } }));
+  };
+
+  onSubmit = (e) => {
+    e.preventDefault();
+    const f = this.state.form;
+    const isMinor = f.edad !== "" && Number(f.edad) < 18;
+    if (!f.reglamentoAceptado) return;
+    if (isMinor && !f.autAceptado) return;
+
+    const codigo = makeCodigo(this.state.nextCodigo);
+    const expMap = { ninguna: "Ninguna", principiante: "Principiante", intermedio: "Intermedio", avanzado: "Avanzado" };
+    const nuevaFila = {
+      codigo,
+      nombre: f.nombre || "(sin nombre)",
+      edad: f.edad,
+      tipoLabel: f.tipo === "miembro" ? "Miembro" : "Evento puntual",
+      experienciaLabel: expMap[f.experiencia] || "-",
+      estadoLabel: "Pendiente",
+      estadoClass: "tag tag-outline"
+    };
+
+    this.setState(s => ({
+      submitted: true,
+      codigoGenerado: codigo,
+      nextCodigo: s.nextCodigo + 1,
+      inscripciones: [nuevaFila, ...s.inscripciones]
+    }));
+  };
+
+  resetForm = () => {
+    this.setState({ submitted: false, form: emptyForm(), codigoGenerado: "" });
+  };
+
+  goToAdmin = () => this.setState({ page: "admin" });
+  goToLanding = () => this.setState({ page: "landing", adminUser: "", adminPass: "", adminError: "" });
+  goToReglamento = () => this.setState({ page: "reglamento" });
+
+  onAdminFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, adminError: "" });
+  };
+
+  onAdminLogin = (e) => {
+    e.preventDefault();
+    if (this.state.adminUser === "adminhavok" && this.state.adminPass === "havok2026") {
+      this.setState({ adminLoggedIn: true, adminError: "" });
+    } else {
+      this.setState({ adminError: "Usuario o contraseña incorrectos." });
+    }
+  };
+
+  adminLogout = () => {
+    this.setState({ adminLoggedIn: false, adminUser: "", adminPass: "", page: "landing" });
+  };
+
+  renderVals() {
+    const f = this.state.form;
+    const isMinor = f.edad !== "" && Number(f.edad) < 18;
+    const tipoIsEvento = f.tipo === "evento";
+    const tipoIsMiembro = f.tipo === "miembro";
+
+    const totalMiembros = this.state.inscripciones.filter(r => r.tipoLabel === "Miembro").length;
+    const totalEventos = this.state.inscripciones.filter(r => r.tipoLabel === "Evento puntual").length;
+
+    return {
+      isAdmin: this.state.page === "admin",
+      isLanding: this.state.page === "landing",
+      isReglamento: this.state.page === "reglamento",
+      goToAdmin: this.goToAdmin,
+      goToLanding: this.goToLanding,
+      goToReglamento: this.goToReglamento,
+      adminLoggedIn: this.state.adminLoggedIn,
+      notAdminLoggedIn: !this.state.adminLoggedIn,
+      adminUser: this.state.adminUser,
+      adminPass: this.state.adminPass,
+      adminError: this.state.adminError,
+      onAdminFieldChange: this.onAdminFieldChange,
+      onAdminLogin: this.onAdminLogin,
+      adminLogout: this.adminLogout,
+      sheetUrl: "https://docs.google.com/spreadsheets/d/1voPtG0Ij_dXmLubsSTu2pZdOIo2Xh_GBw6uMNpZR7zs/edit",
+      reglamentoSecciones: REGLAMENTO_SECCIONES,
+      reglas: REGLAS,
+      form: f,
+      isMinor,
+      tipoIsEvento,
+      tipoIsMiembro,
+      onFieldChange: this.onFieldChange,
+      onSubmit: this.onSubmit,
+      submitted: this.state.submitted,
+      notSubmitted: !this.state.submitted,
+      codigoGenerado: this.state.codigoGenerado,
+      mensajeConfirmacion: f.tipo === "miembro"
+        ? "En breve un responsable de la agrupación te va a contactar para coordinar el pago de la cuota y confirmar tu ingreso."
+        : "Un responsable de la agrupación te va a contactar para confirmar tu lugar en la próxima partida.",
+      resetForm: this.resetForm,
+      inscripciones: this.state.inscripciones,
+      totalInscripciones: this.state.inscripciones.length,
+      totalMiembros,
+      totalEventos
+    };
+  }
+}
+
+</script>
+</body>
+</html>
