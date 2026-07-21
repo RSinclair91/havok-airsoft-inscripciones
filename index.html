@@ -71,6 +71,9 @@
     <sc-if value="{{ deleteError }}" hint-placeholder-val="{{ false }}">
       <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ deleteError }}</div>
     </sc-if>
+    <sc-if value="{{ estadoError }}" hint-placeholder-val="{{ false }}">
+      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ estadoError }}</div>
+    </sc-if>
     <sc-if value="{{ noInscripciones }}" hint-placeholder-val="{{ false }}">
       <div class="text-muted" style="margin-bottom:var(--space-4);">Todavía no hay inscripciones cargadas.</div>
     </sc-if>
@@ -97,7 +100,7 @@
               <td>{{ row.edad }}</td>
               <td>{{ row.tipoLabel }}</td>
               <td style="color:var(--color-neutral-400);">{{ row.experienciaLabel }}</td>
-              <td><span class="{{ row.estadoClass }}">{{ row.estadoLabel }}</span></td>
+              <td><span class="{{ row.estadoClass }}" style="{{ row.estadoStyle }}">{{ row.estadoLabel }}</span></td>
               <td style="padding-right:var(--space-4);">
                 <sc-if value="{{ row.confirmingDelete }}" hint-placeholder-val="{{ false }}">
                   <div style="display:flex;gap:6px;">
@@ -106,7 +109,15 @@
                   </div>
                 </sc-if>
                 <sc-if value="{{ row.notConfirmingDelete }}" hint-placeholder-val="{{ true }}">
-                  <button class="btn btn-secondary" onClick="{{ row.onDeleteClick }}" style="padding:4px 10px;font-size:12px;">Borrar</button>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <sc-if value="{{ row.canAprobar }}" hint-placeholder-val="{{ true }}">
+                      <button class="btn btn-secondary" onClick="{{ row.onAprobarClick }}" style="padding:4px 10px;font-size:12px;">Aprobar</button>
+                    </sc-if>
+                    <sc-if value="{{ row.canRechazar }}" hint-placeholder-val="{{ true }}">
+                      <button class="btn btn-secondary" onClick="{{ row.onRechazarClick }}" style="padding:4px 10px;font-size:12px;color:#c96a5a;border-color:#c96a5a;">Rechazar</button>
+                    </sc-if>
+                    <button class="btn btn-secondary" onClick="{{ row.onDeleteClick }}" style="padding:4px 10px;font-size:12px;">Borrar</button>
+                  </div>
                 </sc-if>
               </td>
             </tr>
@@ -442,6 +453,8 @@ class Component extends DCLogic {
     deleteConfirmCodigo: "",
     deletingCodigo: "",
     deleteError: "",
+    estadoUpdatingCodigo: "",
+    estadoError: "",
     inscripciones: []
   };
 
@@ -552,7 +565,8 @@ class Component extends DCLogic {
             tipoLabel: r.Tipo || "-",
             experienciaLabel: r.Experiencia || "-",
             estadoLabel: r.Estado || "Pendiente",
-            estadoClass: r.Estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline"
+            estadoClass: r.Estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
+            estadoStyle: r.Estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : ""
           })).reverse();
           this.setState({ inscripciones: mapped, adminDataLoading: false });
         } else {
@@ -603,6 +617,40 @@ class Component extends DCLogic {
       });
   };
 
+  setEstado = (codigo, estado) => {
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
+    this.setState({ estadoUpdatingCodigo: codigo, estadoError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "setEstado", user, pass, codigo, estado })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState(s => ({
+            estadoUpdatingCodigo: "",
+            inscripciones: s.inscripciones.map(r => r.codigo === codigo ? {
+              ...r,
+              estadoLabel: estado,
+              estadoClass: estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
+              estadoStyle: estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : ""
+            } : r)
+          }));
+        } else {
+          this.setState({ estadoUpdatingCodigo: "", estadoError: "No se pudo actualizar el estado." });
+        }
+      })
+      .catch(() => {
+        this.setState({ estadoUpdatingCodigo: "", estadoError: "No se pudo conectar con la planilla." });
+      });
+  };
+
+  onAprobar = (codigo) => this.setEstado(codigo, "Aprobado");
+  onRechazar = (codigo) => this.setEstado(codigo, "Rechazado");
+
   renderVals() {
     const f = this.state.form;
     const isMinor = f.edad !== "" && Number(f.edad) < 18;
@@ -622,7 +670,11 @@ class Component extends DCLogic {
         deleting,
         onDeleteClick: () => this.onDeleteClick(row.codigo),
         onDeleteConfirm: () => this.onDeleteConfirm(row.codigo),
-        onDeleteCancel: this.onDeleteCancel
+        onDeleteCancel: this.onDeleteCancel,
+        canAprobar: row.estadoLabel !== "Aprobado",
+        canRechazar: row.estadoLabel !== "Rechazado",
+        onAprobarClick: () => this.onAprobar(row.codigo),
+        onRechazarClick: () => this.onRechazar(row.codigo)
       };
     });
 
@@ -644,6 +696,7 @@ class Component extends DCLogic {
       adminDataLoading: this.state.adminDataLoading,
       adminDataError: this.state.adminDataError,
       deleteError: this.state.deleteError,
+      estadoError: this.state.estadoError,
       hasInscripciones: this.state.inscripciones.length > 0,
       noInscripciones: this.state.inscripciones.length === 0 && !this.state.adminDataLoading,
       sheetUrl: "https://docs.google.com/spreadsheets/d/1GyTeYw1uLySXn9UhW8YSmuWzfQ_qg_orwT8uSMfFWgU/edit",
