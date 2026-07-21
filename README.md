@@ -8,6 +8,8 @@ Página web de inscripción para el equipo de airsoft **Havok**: formulario de a
 - `support.js` — runtime que renderiza la página (carga React/ReactDOM/Babel desde CDN en el navegador).
 - `nocturne-styles.css` — hoja de estilos del sistema de diseño usado.
 - `assets/havok-escudo.jpeg` — escudo del equipo.
+- `assets/campo-equipo.jpg` — foto real del equipo/campo de juego (fondo del hero).
+- `assets/rifle-patch.jpg` — foto real de equipamiento con el parche Havok (sección "Nosotros" y banner de la cinta divisoria).
 - `uploads/Reglamento_Equipo_Airsoft.docx` — reglamento interno original en Word.
 - `uploads/foto-equipo.jpeg` — foto del equipo.
 - `_ds/` — archivos fuente del sistema de diseño (tokens, guía de estilo). No son necesarios para que el sitio funcione; se conservan como referencia.
@@ -15,6 +17,20 @@ Página web de inscripción para el equipo de airsoft **Havok**: formulario de a
 ## Cómo verla
 
 Es un sitio estático de un solo archivo HTML. Se puede abrir `index.html` directamente en el navegador, o publicarla con GitHub Pages (Settings → Pages → branch `main` → carpeta `/root`).
+
+## Retoque visual (fotos reales, textura, animaciones de entrada)
+
+El landing usaba antes solo el escudo como imagen (repetido en dos archivos idénticos) sobre fondos planos. Se sumaron dos fotos reales del equipo:
+
+- El hero ahora usa `campo-equipo.jpg` de fondo (con degradado oscuro encima para que el texto siga siendo legible).
+- La sección "Nosotros" usa `rifle-patch.jpg` como foto principal, con el escudo (`havok-escudo.jpeg`) flotando como insignia circular sobre la esquina de la foto.
+- Se agregó una cinta/banner angosta entre "Nosotros" y "Reglamento" que reutiliza `rifle-patch.jpg` recortada como fondo, con una frase corta a modo de separador visual.
+- La sección de reglamento tiene una textura diagonal sutil (solo CSS, sin imagen) para que no quede tan plana.
+- El título, la bajada y los botones del hero entran con una animación sutil de aparición (fade + desplazamiento), respetando `prefers-reduced-motion`.
+- Las tarjetas (`.card`) tienen ahora un leve efecto de elevación al pasar el mouse.
+- Se corrigió además el responsive en mobile: el nav ahora hace wrap en pantallas chicas en vez de superponerse, y las grillas de dos columnas ("Nosotros" y "Reglamento") pasan a una sola columna por debajo de 720px.
+
+Nada de esto tocó la lógica del formulario, el panel admin ni el backend — son cambios de estilo y de marcado estático dentro de `index.html`.
 
 ## Backend de inscripciones
 
