@@ -167,14 +167,17 @@
 
     <sc-if value="{{ hasInscripciones }}" hint-placeholder-val="{{ false }}">
     <div class="card elev-sm" style="padding:0;overflow-x:auto;">
-      <table class="table" style="min-width:760px;">
+      <table class="table" style="min-width:1180px;">
         <thead>
           <tr>
             <th style="padding-left:var(--space-4);">Código</th>
             <th>Nombre</th>
+            <th>DNI</th>
             <th>Edad</th>
             <th>Tipo</th>
             <th>Experiencia</th>
+            <th>Contacto</th>
+            <th>Contacto de emergencia</th>
             <th>Estado</th>
             <th>Actualizado</th>
             <th style="padding-right:var(--space-4);">Acción</th>
@@ -185,9 +188,18 @@
             <tr>
               <td style="padding-left:var(--space-4);font-family:ui-monospace,monospace;color:var(--color-neutral-400);">{{ row.codigo }}</td>
               <td style="font-weight:500;">{{ row.nombre }}</td>
+              <td style="color:var(--color-neutral-400);">{{ row.dni }}</td>
               <td>{{ row.edad }}</td>
               <td>{{ row.tipoLabel }}</td>
               <td style="color:var(--color-neutral-400);">{{ row.experienciaLabel }}</td>
+              <td style="font-size:12.5px;white-space:nowrap;">
+                <div>{{ row.telefono }}</div>
+                <div style="color:var(--color-neutral-500);">{{ row.email }}</div>
+              </td>
+              <td style="font-size:12.5px;white-space:nowrap;">
+                <div>{{ row.emNombre }} <span style="color:var(--color-neutral-500);">({{ row.emRelacion }})</span></div>
+                <div style="color:var(--color-neutral-500);">{{ row.emTelefono }}</div>
+              </td>
               <td><span class="{{ row.estadoClass }}" style="{{ row.estadoStyle }}">{{ row.estadoLabel }}</span></td>
               <td style="color:var(--color-neutral-400);font-size:12px;">{{ row.estadoFecha }}</td>
               <td style="padding-right:var(--space-4);">
@@ -608,7 +620,13 @@ class Component extends DCLogic {
         edad: f.edad,
         tipo: tipoLabel,
         experiencia: experienciaLabel,
-        estado: "Pendiente"
+        estado: "Pendiente",
+        dni: f.dni,
+        telefono: f.telefono,
+        email: f.email,
+        emNombre: f.emNombre,
+        emTelefono: f.emTelefono,
+        emRelacion: f.emRelacion
       })
     })
       .then(res => res.json())
@@ -622,7 +640,13 @@ class Component extends DCLogic {
             tipoLabel,
             experienciaLabel,
             estadoLabel: "Pendiente",
-            estadoClass: "tag tag-outline"
+            estadoClass: "tag tag-outline",
+            dni: f.dni,
+            telefono: f.telefono,
+            email: f.email,
+            emNombre: f.emNombre,
+            emTelefono: f.emTelefono,
+            emRelacion: f.emRelacion
           };
           this.setState(s => ({
             submitting: false,
@@ -698,7 +722,13 @@ class Component extends DCLogic {
             estadoLabel: r.Estado || "Pendiente",
             estadoClass: r.Estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
             estadoStyle: r.Estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : "",
-            estadoFecha: formatFecha(r.FechaEstado)
+            estadoFecha: formatFecha(r.FechaEstado),
+            dni: r.DNI || "",
+            telefono: r.Telefono || "",
+            email: r.Email || "",
+            emNombre: r.ContactoEmergenciaNombre || "",
+            emTelefono: r.ContactoEmergenciaTelefono || "",
+            emRelacion: r.ContactoEmergenciaRelacion || ""
           })).reverse();
           this.setState({ inscripciones: mapped, adminDataLoading: false });
         } else {

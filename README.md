@@ -69,6 +69,19 @@ Como no todas las filas tienen ya un Código único (las eventuales lo tienen va
 
 Las inscripciones eventuales igual quedan registradas con fecha y datos en una hoja aparte de la misma planilla, **"Eventuales"** (columnas `Fecha`, `Nombre`, `Edad`, `Experiencia`, `VecesInscripto`), para tener un historial de cuántas veces se anotó cada jugador ocasional. `VecesInscripto` lo calcula el backend contando coincidencias previas de nombre (sin importar mayúsculas/espacios) en esa misma hoja. Esta hoja no se usa para nada del panel admin, es solo un registro de consulta manual.
 
+### DNI, teléfono, email y contacto de emergencia ahora sí llegan al panel admin
+
+Se detectó que el formulario pedía DNI, teléfono, email y el contacto de emergencia (nombre, teléfono, relación), pero esos datos nunca se enviaban al backend ni se guardaban en la planilla — quedaban solo en la pantalla de quien se inscribía. El panel admin nunca pudo mostrarlos porque el dato no llegaba a existir del lado del servidor.
+
+Se corrigió de punta a punta:
+
+- La planilla principal tiene 6 columnas nuevas después de `Id`: `DNI`, `Telefono`, `Email`, `ContactoEmergenciaNombre`, `ContactoEmergenciaTelefono`, `ContactoEmergenciaRelacion`.
+- El formulario ahora manda esos 6 campos al backend junto con el resto de la inscripción.
+- El backend los guarda en las columnas correspondientes (buscándolas por nombre de columna, igual que ya hacía con `FechaEstado` e `Id`, así que no importa el orden de las columnas en la planilla).
+- El panel admin muestra dos columnas nuevas en la tabla: **DNI** y **Contacto** (teléfono y email), y **Contacto de emergencia** (nombre, relación y teléfono). Se muestran para **ambos tipos de inscripción**, miembro y evento puntual.
+
+Esto se probó de punta a punta contra el backend en producción (una inscripción de prueba con todos los campos, verificada en la planilla y luego borrada) y visualmente en el panel admin con datos simulados.
+
 Importante: como el número de Código nunca se reutiliza (el backend escanea también las filas "Eliminadas" al calcular el próximo número), borrar una inscripción de miembro por error o de prueba no libera su número — si hace falta reservar un código específico (por ejemplo, para los líderes del equipo), conviene borrar esa fila directamente en la planilla en lugar de usar el botón "Borrar" del panel.
 
 ## Login del panel admin
