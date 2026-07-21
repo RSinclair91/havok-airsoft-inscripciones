@@ -89,6 +89,7 @@
             <th>Tipo</th>
             <th>Experiencia</th>
             <th>Estado</th>
+            <th>Actualizado</th>
             <th style="padding-right:var(--space-4);">Acción</th>
           </tr>
         </thead>
@@ -101,6 +102,7 @@
               <td>{{ row.tipoLabel }}</td>
               <td style="color:var(--color-neutral-400);">{{ row.experienciaLabel }}</td>
               <td><span class="{{ row.estadoClass }}" style="{{ row.estadoStyle }}">{{ row.estadoLabel }}</span></td>
+              <td style="color:var(--color-neutral-400);font-size:12px;">{{ row.estadoFecha }}</td>
               <td style="padding-right:var(--space-4);">
                 <sc-if value="{{ row.confirmingDelete }}" hint-placeholder-val="{{ false }}">
                   <div style="display:flex;gap:6px;">
@@ -343,7 +345,16 @@
           <span style="font-size:14px;">Leí y acepto el <a href="#reglamento" onClick="{{ goToReglamento }}">reglamento y las normas de seguridad</a>, y deslindo a Havok Airsoft Team de responsabilidad por el uso indebido de equipamiento.</span>
         </label>
 
-        <button type="submit" class="btn btn-primary btn-block" style="font-size:15px;padding:var(--space-4);">Confirmar inscripción</button>
+        <sc-if value="{{ submitError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ submitError }}</div>
+        </sc-if>
+
+        <sc-if value="{{ notSubmitting }}" hint-placeholder-val="{{ true }}">
+          <button type="submit" class="btn btn-primary btn-block" style="font-size:15px;padding:var(--space-4);">Confirmar inscripción</button>
+        </sc-if>
+        <sc-if value="{{ submitting }}" hint-placeholder-val="{{ false }}">
+          <button type="button" class="btn btn-primary btn-block" style="font-size:15px;padding:var(--space-4);opacity:0.7;">Enviando...</button>
+        </sc-if>
       </form>
       </sc-if>
     </div>
@@ -423,8 +434,11 @@ const REGLAS = [
   "Prohibido el uso de réplicas o munición distinta a BB's de 6mm de material plástico."
 ];
 
-function makeCodigo(n) {
-  return "HVK-2026-" + String(n).padStart(4, "0");
+function formatFecha(v) {
+  if (!v) return "-";
+  var d = new Date(v);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 const emptyForm = () => ({
@@ -443,7 +457,8 @@ class Component extends DCLogic {
     form: emptyForm(),
     submitted: false,
     codigoGenerado: "",
-    nextCodigo: 4,
+    submitting: false,
+    submitError: "",
     adminLoggedIn: false,
     adminUser: "",
     adminPass: "",
@@ -475,38 +490,49 @@ class Component extends DCLogic {
     if (!f.reglamentoAceptado) return;
     if (isMinor && !f.autAceptado) return;
 
-    const codigo = makeCodigo(this.state.nextCodigo);
     const expMap = { ninguna: "Ninguna", principiante: "Principiante", intermedio: "Intermedio", avanzado: "Avanzado" };
-    const nuevaFila = {
-      codigo,
-      nombre: f.nombre || "(sin nombre)",
-      edad: f.edad,
-      tipoLabel: f.tipo === "miembro" ? "Miembro" : "Evento puntual",
-      experienciaLabel: expMap[f.experiencia] || "-",
-      estadoLabel: "Pendiente",
-      estadoClass: "tag tag-outline"
-    };
+    const tipoLabel = f.tipo === "miembro" ? "Miembro" : "Evento puntual";
+    const experienciaLabel = expMap[f.experiencia] || "-";
+
+    this.setState({ submitting: true, submitError: "" });
 
     fetch(INSCRIPCIONES_ENDPOINT, {
       method: "POST",
-      mode: "no-cors",
+      mode: "cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
-        codigo,
         nombre: f.nombre || "(sin nombre)",
         edad: f.edad,
-        tipo: nuevaFila.tipoLabel,
-        experiencia: nuevaFila.experienciaLabel,
+        tipo: tipoLabel,
+        experiencia: experienciaLabel,
         estado: "Pendiente"
       })
-    }).catch(() => {});
-
-    this.setState(s => ({
-      submitted: true,
-      codigoGenerado: codigo,
-      nextCodigo: s.nextCodigo + 1,
-      inscripciones: [nuevaFila, ...s.inscripciones]
-    }));
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok" && data.codigo) {
+          const nuevaFila = {
+            codigo: data.codigo,
+            nombre: f.nombre || "(sin nombre)",
+            edad: f.edad,
+            tipoLabel,
+            experienciaLabel,
+            estadoLabel: "Pendiente",
+            estadoClass: "tag tag-outline"
+          };
+          this.setState(s => ({
+            submitting: false,
+            submitted: true,
+            codigoGenerado: data.codigo,
+            inscripciones: [nuevaFila, ...s.inscripciones]
+          }));
+        } else {
+          this.setState({ submitting: false, submitError: "No se pudo enviar la inscripción. Probá de nuevo." });
+        }
+      })
+      .catch(() => {
+        this.setState({ submitting: false, submitError: "No se pudo conectar con el servidor. Probá de nuevo." });
+      });
   };
 
   resetForm = () => {
@@ -566,7 +592,8 @@ class Component extends DCLogic {
             experienciaLabel: r.Experiencia || "-",
             estadoLabel: r.Estado || "Pendiente",
             estadoClass: r.Estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
-            estadoStyle: r.Estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : ""
+            estadoStyle: r.Estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : "",
+            estadoFecha: formatFecha(r.FechaEstado)
           })).reverse();
           this.setState({ inscripciones: mapped, adminDataLoading: false });
         } else {
@@ -636,7 +663,8 @@ class Component extends DCLogic {
               ...r,
               estadoLabel: estado,
               estadoClass: estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
-              estadoStyle: estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : ""
+              estadoStyle: estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : "",
+              estadoFecha: formatFecha(new Date())
             } : r)
           }));
         } else {
@@ -710,6 +738,9 @@ class Component extends DCLogic {
       onSubmit: this.onSubmit,
       submitted: this.state.submitted,
       notSubmitted: !this.state.submitted,
+      submitting: this.state.submitting,
+      notSubmitting: !this.state.submitting,
+      submitError: this.state.submitError,
       codigoGenerado: this.state.codigoGenerado,
       mensajeConfirmacion: f.tipo === "miembro"
         ? "En breve un responsable de la agrupación te va a contactar para coordinar el pago de la cuota y confirmar tu ingreso."
