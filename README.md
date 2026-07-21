@@ -28,11 +28,21 @@ Si el endpoint cambia (por ejemplo, se crea una nueva versión del deploy), hay 
 
 El panel admin ya no muestra datos de ejemplo: al loguearse, pide al mismo endpoint (`action: "list"`, con el usuario/contraseña ingresados) todas las filas de la planilla y las muestra en la tabla y en los contadores. Esa acción también valida usuario/contraseña contra las mismas Script Properties que el login, así que solo responde con datos si las credenciales son correctas.
 
-Cada fila de la tabla tiene un botón "Borrar" que pide confirmación (Confirmar / Cancelar) antes de borrar. Al confirmar, se llama al endpoint con `action: "delete"` (también validado con usuario/contraseña), que busca la fila por su Código. La fila **no se elimina físicamente**: su Estado pasa a "Eliminado" y se registra la fecha en la columna `FechaEstado`, para conservar el historial en la planilla. La acción `list` (la que alimenta el panel) filtra las filas en estado "Eliminado", así que dejan de figurar en el sitio aunque sigan en la planilla.
+Cada fila de la tabla tiene un botón "Borrar" que pide confirmación (Confirmar / Cancelar) antes de borrar. Al confirmar, se llama al endpoint con `action: "delete"` (también validado con usuario/contraseña), que busca la fila por su **Id** (ver más abajo). La fila **no se elimina físicamente**: su Estado pasa a "Eliminado" y se registra la fecha en la columna `FechaEstado`, para conservar el historial en la planilla. La acción `list` (la que alimenta el panel) filtra las filas en estado "Eliminado", así que dejan de figurar en el sitio aunque sigan en la planilla.
 
-También tiene botones "Aprobar" y "Rechazar" (se ocultan si la inscripción ya tiene ese estado) que llaman al endpoint con `action: "setEstado"` para cambiar la columna Estado de esa fila en la planilla, sin necesidad de confirmación ya que es una acción reversible. Cada cambio de estado (incluido el borrado) actualiza la columna `FechaEstado` con la fecha/hora del cambio, y esa fecha se muestra en el panel admin en la columna "Actualizado".
+También tiene botones "Aprobar" y "Rechazar" (se ocultan si la inscripción ya tiene ese estado) que llaman al endpoint con `action: "setEstado"` (también buscando la fila por su Id) para cambiar la columna Estado de esa fila en la planilla, sin necesidad de confirmación ya que es una acción reversible. Cada cambio de estado (incluido el borrado) actualiza la columna `FechaEstado` con la fecha/hora del cambio, y esa fecha se muestra en el panel admin en la columna "Actualizado".
 
 El código de inscripción (`HVK-2026-####`) ya no lo genera el navegador: lo asigna el backend al recibir el envío del formulario (buscando el número más alto ya usado en la planilla y sumando uno), y lo devuelve en la respuesta. Esto evita que dos inscripciones terminen con el mismo código si se envían desde dos pestañas o sesiones distintas.
+
+### Columna Id, códigos solo para miembros, y hoja "Eventuales"
+
+Desde esta vuelta, el Código (`HVK-2026-####`) sólo se genera para inscripciones de tipo **"Miembro del equipo"**. Las de **"Evento puntual"** quedan con el Código vacío en la planilla y no muestran ningún código en la pantalla de confirmación — son participantes ocasionales, no forman parte de la numeración correlativa de miembros.
+
+Como no todas las filas tienen ya un Código único (las eventuales lo tienen vacío), borrar/aprobar/rechazar dejó de identificar la fila por su Código y ahora usa una columna nueva, **`Id`** (un UUID generado por el backend al crear la fila), que sí es único siempre. Por eso la planilla principal tiene una columna `Id` después de `FechaEstado`; no hace falta tocarla a mano, la genera y la usa el backend solo.
+
+Las inscripciones eventuales igual quedan registradas con fecha y datos en una hoja aparte de la misma planilla, **"Eventuales"** (columnas `Fecha`, `Nombre`, `Edad`, `Experiencia`, `VecesInscripto`), para tener un historial de cuántas veces se anotó cada jugador ocasional. `VecesInscripto` lo calcula el backend contando coincidencias previas de nombre (sin importar mayúsculas/espacios) en esa misma hoja. Esta hoja no se usa para nada del panel admin, es solo un registro de consulta manual.
+
+Importante: como el número de Código nunca se reutiliza (el backend escanea también las filas "Eliminadas" al calcular el próximo número), borrar una inscripción de miembro por error o de prueba no libera su número — si hace falta reservar un código específico (por ejemplo, para los líderes del equipo), conviene borrar esa fila directamente en la planilla en lugar de usar el botón "Borrar" del panel.
 
 ## Login del panel admin
 
