@@ -32,6 +32,17 @@ El landing usaba antes solo el escudo como imagen (repetido en dos archivos idé
 
 Nada de esto tocó la lógica del formulario, el panel admin ni el backend — son cambios de estilo y de marcado estático dentro de `index.html`.
 
+## Tipo de inscripción: elección obligatoria y más clara
+
+Se detectó un caso real de confusión: alguien que quería anotarse como "Miembro del equipo" terminó enviando la inscripción como "Evento puntual" sin darse cuenta, porque esa opción venía preseleccionada por defecto y las dos opciones se distinguían solo por un borde fino apenas visible.
+
+Para que no vuelva a pasar:
+
+- Ya **no hay ninguna opción preseleccionada**: al abrir el formulario (o al reiniciarlo después de una inscripción) ninguna de las dos tarjetas aparece marcada, así que hay que elegir una a propósito.
+- Cada opción ahora tiene un título y una descripción corta debajo ("Participás en una partida puntual, sin sumarte al equipo" / "Te sumás de forma estable, con cuota mensual"), y un texto arriba aclara que el dato no se puede cambiar después de enviar el formulario.
+- La opción elegida se marca con un relleno dorado sólido y la etiqueta "✓ Seleccionado", en vez del borde fino de antes.
+- El campo es obligatorio: si se intenta enviar el formulario sin elegir tipo, el navegador bloquea el envío (usando validación nativa HTML, con `required` atado a `{{ true }}` como ya se hacía con el check del reglamento) y también se valida en el código antes de armar la inscripción.
+
 ## Backend de inscripciones
 
 El formulario envía cada inscripción (por `fetch`, sin bloquear la confirmación en pantalla) a un Google Apps Script publicado como app web, que agrega una fila a la planilla de Google Sheets **"Havok Airsoft - Inscripciones"**. El enlace "Abrir Google Sheet" del panel admin apunta a esa misma planilla.

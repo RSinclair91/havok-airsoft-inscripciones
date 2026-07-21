@@ -100,6 +100,25 @@
     .nav { flex-wrap: wrap; row-gap: var(--space-2); }
     .nav-brand { flex: 1 1 100%; margin-right: 0; }
   }
+
+  /* Tipo de inscripción: opciones más claras, sin selección por defecto */
+  .havok-tipo-seg .seg-opt {
+    flex-direction: column; align-items: center; text-align: center;
+    gap: 3px; padding: var(--space-4) var(--space-3);
+  }
+  .havok-tipo-seg .seg-title { font-weight: 700; font-size: 14.5px; }
+  .havok-tipo-seg .seg-desc { font-size: 12px; font-weight: 400; color: var(--color-neutral-400); }
+  .havok-tipo-seg .seg-opt:has(input:checked) {
+    background: var(--color-accent); box-shadow: none;
+  }
+  .havok-tipo-seg .seg-opt:has(input:checked) .seg-title,
+  .havok-tipo-seg .seg-opt:has(input:checked) .seg-desc {
+    color: var(--color-bg);
+  }
+  .havok-tipo-seg .seg-opt:has(input:checked)::after {
+    content: "✓ Seleccionado"; font-size: 11px; font-weight: 700;
+    letter-spacing: .03em; color: var(--color-bg); margin-top: 2px;
+  }
 </style>
 </helmet>
 
@@ -349,12 +368,17 @@
 
         <div class="field">
           <label>Tipo de inscripción</label>
-          <div class="seg" style="width:100%;">
-            <label class="seg-opt" style="flex:1;justify-content:center;">
-              <input type="radio" name="tipo" value="evento" checked="{{ tipoIsEvento }}" onChange="{{ onFieldChange }}">Evento puntual
+          <p style="color:var(--color-neutral-400);font-size:12.5px;margin:2px 0 var(--space-3);">Elegí una opción antes de continuar. Este dato no se puede cambiar después de enviar el formulario.</p>
+          <div class="seg havok-tipo-seg" style="width:100%;">
+            <label class="seg-opt" style="flex:1;">
+              <input type="radio" name="tipo" value="evento" checked="{{ tipoIsEvento }}" onChange="{{ onFieldChange }}" required="{{ true }}">
+              <span class="seg-title">Evento puntual</span>
+              <span class="seg-desc">Participás en una partida puntual, sin sumarte al equipo</span>
             </label>
-            <label class="seg-opt" style="flex:1;justify-content:center;" data-om-label="Inscripción para miembro del equipo">
-              <input type="radio" name="tipo" value="miembro" checked="{{ tipoIsMiembro }}" onChange="{{ onFieldChange }}">Miembro del equipo
+            <label class="seg-opt" style="flex:1;" data-om-label="Inscripción para miembro del equipo">
+              <input type="radio" name="tipo" value="miembro" checked="{{ tipoIsMiembro }}" onChange="{{ onFieldChange }}" required="{{ true }}">
+              <span class="seg-title">Miembro del equipo</span>
+              <span class="seg-desc">Te sumás de forma estable, con cuota mensual</span>
             </label>
           </div>
           <sc-if value="{{ tipoIsMiembro }}" hint-placeholder-val="{{ false }}">
@@ -520,7 +544,7 @@ function formatFecha(v) {
 }
 
 const emptyForm = () => ({
-  tipo: "evento",
+  tipo: "",
   nombre: "", dni: "", edad: "", telefono: "", email: "",
   emNombre: "", emTelefono: "", emRelacion: "",
   experiencia: "",
@@ -565,6 +589,7 @@ class Component extends DCLogic {
     e.preventDefault();
     const f = this.state.form;
     const isMinor = f.edad !== "" && Number(f.edad) < 18;
+    if (!f.tipo) return;
     if (!f.reglamentoAceptado) return;
     if (isMinor && !f.autAceptado) return;
 
