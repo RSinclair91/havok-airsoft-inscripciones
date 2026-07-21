@@ -51,3 +51,9 @@ El usuario y la contraseña del panel admin **no** están en este código: se va
 Esto evita que cualquiera que abra el código fuente de la página vea la contraseña en texto plano, pero como el resto del panel (qué se muestra tras loguearse) sigue siendo lógica de React en el navegador, no es una autenticación de nivel productivo — alcanza para disuadir a un visitante casual, no para proteger datos realmente sensibles.
 
 Para cambiar el usuario o la contraseña: Apps Script del proyecto → ícono de engranaje (Configuración del proyecto) → Propiedades de las secuencias de comandos → editar `ADMIN_USER` / `ADMIN_PASS`.
+
+## Aviso por correo de nuevas inscripciones
+
+Cada vez que se recibe una inscripción nueva (sea "Miembro" o "Evento puntual"), el backend envía un correo de aviso a `s.c.roberto.rs@gmail.com` con el nombre, tipo, código (si es miembro), edad, experiencia y fecha. El envío usa `MailApp.sendEmail` de Apps Script y está envuelto en su propio `try/catch`: si por algún motivo el envío del correo fallara, la inscripción se guarda igual en la planilla y la respuesta al formulario no se ve afectada — el aviso por correo es un extra, no una condición para que la inscripción se registre.
+
+La primera vez que se agregó esta función fue necesario autorizar manualmente el permiso de envío de correo desde el editor de Apps Script (ejecutando la función una vez y aceptando el permiso solicitado); si en el futuro se mueve el proyecto a otra cuenta de Google, habría que repetir ese paso una vez.
