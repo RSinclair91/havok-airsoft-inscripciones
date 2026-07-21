@@ -82,6 +82,19 @@ Se corrigió de punta a punta:
 
 Esto se probó de punta a punta contra el backend en producción (una inscripción de prueba con todos los campos, verificada en la planilla y luego borrada) y visualmente en el panel admin con datos simulados.
 
+### Autorización del adulto responsable (menores de edad) también llega ahora al panel admin
+
+Mismo problema que el anterior, pero con los datos que pide el formulario cuando quien se inscribe es menor de edad: nombre y DNI del adulto responsable, y la aceptación de la autorización. Se recolectaban en el formulario (son obligatorios si la edad cargada es menor a 18) pero tampoco se enviaban al backend ni se guardaban en la planilla.
+
+Se corrigió igual que el caso anterior:
+
+- La planilla principal tiene 3 columnas nuevas después de `ContactoEmergenciaRelacion`: `AutorizacionAdultoNombre`, `AutorizacionAdultoDni`, `AutorizacionAceptada` (esta última guarda "Si" cuando se aceptó).
+- El formulario ahora manda esos 3 campos al backend junto con el resto de la inscripción, solo cuando corresponde (si no es menor, se mandan vacíos).
+- El backend los guarda en las columnas correspondientes, buscándolas por nombre de columna igual que el resto de los campos.
+- El panel admin muestra una columna nueva, **Autorización adulto**, con el nombre y DNI del adulto responsable. Queda vacía para inscripciones donde quien se anotó no era menor de edad.
+
+Esto se probó de punta a punta contra el backend en producción (una inscripción de prueba simulando un menor con adulto responsable, verificada en la planilla y luego borrada) y también localmente, llenando el formulario completo como si fuera un menor y revisando que los datos correctos viajaran en el envío, además de una verificación visual del panel admin con datos simulados.
+
 Importante: como el número de Código nunca se reutiliza (el backend escanea también las filas "Eliminadas" al calcular el próximo número), borrar una inscripción de miembro por error o de prueba no libera su número — si hace falta reservar un código específico (por ejemplo, para los líderes del equipo), conviene borrar esa fila directamente en la planilla en lugar de usar el botón "Borrar" del panel.
 
 ## Login del panel admin

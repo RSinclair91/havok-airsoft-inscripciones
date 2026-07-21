@@ -167,7 +167,7 @@
 
     <sc-if value="{{ hasInscripciones }}" hint-placeholder-val="{{ false }}">
     <div class="card elev-sm" style="padding:0;overflow-x:auto;">
-      <table class="table" style="min-width:1180px;">
+      <table class="table" style="min-width:1380px;">
         <thead>
           <tr>
             <th style="padding-left:var(--space-4);">Código</th>
@@ -178,6 +178,7 @@
             <th>Experiencia</th>
             <th>Contacto</th>
             <th>Contacto de emergencia</th>
+            <th>Autorización adulto</th>
             <th>Estado</th>
             <th>Actualizado</th>
             <th style="padding-right:var(--space-4);">Acción</th>
@@ -199,6 +200,10 @@
               <td style="font-size:12.5px;white-space:nowrap;">
                 <div>{{ row.emNombre }} <span style="color:var(--color-neutral-500);">({{ row.emRelacion }})</span></div>
                 <div style="color:var(--color-neutral-500);">{{ row.emTelefono }}</div>
+              </td>
+              <td style="font-size:12.5px;white-space:nowrap;">
+                <div>{{ row.autNombre }}</div>
+                <div style="color:var(--color-neutral-500);">{{ row.autDni }}</div>
               </td>
               <td><span class="{{ row.estadoClass }}" style="{{ row.estadoStyle }}">{{ row.estadoLabel }}</span></td>
               <td style="color:var(--color-neutral-400);font-size:12px;">{{ row.estadoFecha }}</td>
@@ -626,7 +631,10 @@ class Component extends DCLogic {
         email: f.email,
         emNombre: f.emNombre,
         emTelefono: f.emTelefono,
-        emRelacion: f.emRelacion
+        emRelacion: f.emRelacion,
+        autNombre: f.autNombre,
+        autDni: f.autDni,
+        autAceptado: f.autAceptado
       })
     })
       .then(res => res.json())
@@ -646,7 +654,9 @@ class Component extends DCLogic {
             email: f.email,
             emNombre: f.emNombre,
             emTelefono: f.emTelefono,
-            emRelacion: f.emRelacion
+            emRelacion: f.emRelacion,
+            autNombre: isMinor ? f.autNombre : "",
+            autDni: isMinor ? f.autDni : ""
           };
           this.setState(s => ({
             submitting: false,
@@ -728,7 +738,9 @@ class Component extends DCLogic {
             email: r.Email || "",
             emNombre: r.ContactoEmergenciaNombre || "",
             emTelefono: r.ContactoEmergenciaTelefono || "",
-            emRelacion: r.ContactoEmergenciaRelacion || ""
+            emRelacion: r.ContactoEmergenciaRelacion || "",
+            autNombre: r.AutorizacionAdultoNombre || "",
+            autDni: r.AutorizacionAdultoDni || ""
           })).reverse();
           this.setState({ inscripciones: mapped, adminDataLoading: false });
         } else {
