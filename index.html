@@ -62,6 +62,17 @@
       </div>
     </div>
 
+    <sc-if value="{{ adminDataLoading }}" hint-placeholder-val="{{ false }}">
+      <div class="text-muted" style="margin-bottom:var(--space-4);">Cargando inscripciones desde la planilla...</div>
+    </sc-if>
+    <sc-if value="{{ adminDataError }}" hint-placeholder-val="{{ false }}">
+      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ adminDataError }}</div>
+    </sc-if>
+    <sc-if value="{{ noInscripciones }}" hint-placeholder-val="{{ false }}">
+      <div class="text-muted" style="margin-bottom:var(--space-4);">Todavía no hay inscripciones cargadas.</div>
+    </sc-if>
+
+    <sc-if value="{{ hasInscripciones }}" hint-placeholder-val="{{ false }}">
     <div class="card elev-sm" style="padding:0;overflow-x:auto;">
       <table class="table" style="min-width:760px;">
         <thead>
@@ -88,6 +99,7 @@
         </tbody>
       </table>
     </div>
+    </sc-if>
   </div>
   </sc-if>
 
@@ -410,11 +422,9 @@ class Component extends DCLogic {
     adminUser: "",
     adminPass: "",
     adminError: "",
-    inscripciones: [
-      { codigo: makeCodigo(1), nombre: "Martín Aguilera", edad: 27, tipoLabel: "Miembro", experienciaLabel: "Avanzado", estadoLabel: "Aprobado", estadoClass: "tag tag-accent" },
-      { codigo: makeCodigo(2), nombre: "Sofía Ramírez", edad: 19, tipoLabel: "Evento puntual", experienciaLabel: "Principiante", estadoLabel: "Pendiente", estadoClass: "tag tag-outline" },
-      { codigo: makeCodigo(3), nombre: "Lucas Ferreyra", edad: 15, tipoLabel: "Evento puntual", experienciaLabel: "Ninguna", estadoLabel: "Pendiente", estadoClass: "tag tag-outline" }
-    ]
+    adminDataLoading: false,
+    adminDataError: "",
+    inscripciones: []
   };
 
   onFieldChange = (e) => {
@@ -496,6 +506,7 @@ class Component extends DCLogic {
       .then(data => {
         if (data.result === "ok") {
           this.setState({ adminLoggedIn: true, adminError: "" });
+          this.loadInscripciones(user, pass);
         } else {
           this.setState({ adminError: "Usuario o contraseña incorrectos." });
         }
@@ -505,8 +516,38 @@ class Component extends DCLogic {
       });
   };
 
+  loadInscripciones = (user, pass) => {
+    this.setState({ adminDataLoading: true, adminDataError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "list", user, pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok" && Array.isArray(data.rows)) {
+          const mapped = data.rows.map(r => ({
+            codigo: r.Codigo || "",
+            nombre: r.Nombre || "(sin nombre)",
+            edad: r.Edad,
+            tipoLabel: r.Tipo || "-",
+            experienciaLabel: r.Experiencia || "-",
+            estadoLabel: r.Estado || "Pendiente",
+            estadoClass: r.Estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline"
+          })).reverse();
+          this.setState({ inscripciones: mapped, adminDataLoading: false });
+        } else {
+          this.setState({ adminDataLoading: false, adminDataError: "No se pudieron cargar las inscripciones." });
+        }
+      })
+      .catch(() => {
+        this.setState({ adminDataLoading: false, adminDataError: "No se pudo conectar con la planilla." });
+      });
+  };
+
   adminLogout = () => {
-    this.setState({ adminLoggedIn: false, adminUser: "", adminPass: "", page: "landing" });
+    this.setState({ adminLoggedIn: false, adminUser: "", adminPass: "", page: "landing", inscripciones: [] });
   };
 
   renderVals() {
@@ -533,6 +574,10 @@ class Component extends DCLogic {
       onAdminFieldChange: this.onAdminFieldChange,
       onAdminLogin: this.onAdminLogin,
       adminLogout: this.adminLogout,
+      adminDataLoading: this.state.adminDataLoading,
+      adminDataError: this.state.adminDataError,
+      hasInscripciones: this.state.inscripciones.length > 0,
+      noInscripciones: this.state.inscripciones.length === 0 && !this.state.adminDataLoading,
       sheetUrl: "https://docs.google.com/spreadsheets/d/1GyTeYw1uLySXn9UhW8YSmuWzfQ_qg_orwT8uSMfFWgU/edit",
       reglamentoSecciones: REGLAMENTO_SECCIONES,
       reglas: REGLAS,
