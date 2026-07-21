@@ -68,6 +68,9 @@
     <sc-if value="{{ adminDataError }}" hint-placeholder-val="{{ false }}">
       <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ adminDataError }}</div>
     </sc-if>
+    <sc-if value="{{ deleteError }}" hint-placeholder-val="{{ false }}">
+      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ deleteError }}</div>
+    </sc-if>
     <sc-if value="{{ noInscripciones }}" hint-placeholder-val="{{ false }}">
       <div class="text-muted" style="margin-bottom:var(--space-4);">Todavía no hay inscripciones cargadas.</div>
     </sc-if>
@@ -82,7 +85,8 @@
             <th>Edad</th>
             <th>Tipo</th>
             <th>Experiencia</th>
-            <th style="padding-right:var(--space-4);">Estado</th>
+            <th>Estado</th>
+            <th style="padding-right:var(--space-4);">Acción</th>
           </tr>
         </thead>
         <tbody>
@@ -93,7 +97,18 @@
               <td>{{ row.edad }}</td>
               <td>{{ row.tipoLabel }}</td>
               <td style="color:var(--color-neutral-400);">{{ row.experienciaLabel }}</td>
-              <td style="padding-right:var(--space-4);"><span class="{{ row.estadoClass }}">{{ row.estadoLabel }}</span></td>
+              <td><span class="{{ row.estadoClass }}">{{ row.estadoLabel }}</span></td>
+              <td style="padding-right:var(--space-4);">
+                <sc-if value="{{ row.confirmingDelete }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;gap:6px;">
+                    <button class="btn btn-secondary" onClick="{{ row.onDeleteConfirm }}" style="padding:4px 10px;font-size:12px;color:#c96a5a;border-color:#c96a5a;">Confirmar</button>
+                    <button class="btn btn-ghost" onClick="{{ row.onDeleteCancel }}" style="padding:4px 10px;font-size:12px;">Cancelar</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ row.notConfirmingDelete }}" hint-placeholder-val="{{ true }}">
+                  <button class="btn btn-secondary" onClick="{{ row.onDeleteClick }}" style="padding:4px 10px;font-size:12px;">Borrar</button>
+                </sc-if>
+              </td>
             </tr>
           </sc-for>
         </tbody>
@@ -424,6 +439,9 @@ class Component extends DCLogic {
     adminError: "",
     adminDataLoading: false,
     adminDataError: "",
+    deleteConfirmCodigo: "",
+    deletingCodigo: "",
+    deleteError: "",
     inscripciones: []
   };
 
@@ -550,6 +568,41 @@ class Component extends DCLogic {
     this.setState({ adminLoggedIn: false, adminUser: "", adminPass: "", page: "landing", inscripciones: [] });
   };
 
+  onDeleteClick = (codigo) => {
+    this.setState({ deleteConfirmCodigo: codigo, deleteError: "" });
+  };
+
+  onDeleteCancel = () => {
+    this.setState({ deleteConfirmCodigo: "" });
+  };
+
+  onDeleteConfirm = (codigo) => {
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
+    this.setState({ deletingCodigo: codigo, deleteError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "delete", user, pass, codigo })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState(s => ({
+            inscripciones: s.inscripciones.filter(r => r.codigo !== codigo),
+            deleteConfirmCodigo: "",
+            deletingCodigo: ""
+          }));
+        } else {
+          this.setState({ deletingCodigo: "", deleteConfirmCodigo: "", deleteError: "No se pudo borrar esa inscripción." });
+        }
+      })
+      .catch(() => {
+        this.setState({ deletingCodigo: "", deleteConfirmCodigo: "", deleteError: "No se pudo conectar con la planilla." });
+      });
+  };
+
   renderVals() {
     const f = this.state.form;
     const isMinor = f.edad !== "" && Number(f.edad) < 18;
@@ -558,6 +611,20 @@ class Component extends DCLogic {
 
     const totalMiembros = this.state.inscripciones.filter(r => r.tipoLabel === "Miembro").length;
     const totalEventos = this.state.inscripciones.filter(r => r.tipoLabel === "Evento puntual").length;
+
+    const inscripcionesView = this.state.inscripciones.map(row => {
+      const confirmingDelete = this.state.deleteConfirmCodigo === row.codigo;
+      const deleting = this.state.deletingCodigo === row.codigo;
+      return {
+        ...row,
+        confirmingDelete,
+        notConfirmingDelete: !confirmingDelete,
+        deleting,
+        onDeleteClick: () => this.onDeleteClick(row.codigo),
+        onDeleteConfirm: () => this.onDeleteConfirm(row.codigo),
+        onDeleteCancel: this.onDeleteCancel
+      };
+    });
 
     return {
       isAdmin: this.state.page === "admin",
@@ -576,6 +643,7 @@ class Component extends DCLogic {
       adminLogout: this.adminLogout,
       adminDataLoading: this.state.adminDataLoading,
       adminDataError: this.state.adminDataError,
+      deleteError: this.state.deleteError,
       hasInscripciones: this.state.inscripciones.length > 0,
       noInscripciones: this.state.inscripciones.length === 0 && !this.state.adminDataLoading,
       sheetUrl: "https://docs.google.com/spreadsheets/d/1GyTeYw1uLySXn9UhW8YSmuWzfQ_qg_orwT8uSMfFWgU/edit",
@@ -594,7 +662,7 @@ class Component extends DCLogic {
         ? "En breve un responsable de la agrupación te va a contactar para coordinar el pago de la cuota y confirmar tu ingreso."
         : "Un responsable de la agrupación te va a contactar para confirmar tu lugar en la próxima partida.",
       resetForm: this.resetForm,
-      inscripciones: this.state.inscripciones,
+      inscripciones: inscripcionesView,
       totalInscripciones: this.state.inscripciones.length,
       totalMiembros,
       totalEventos
