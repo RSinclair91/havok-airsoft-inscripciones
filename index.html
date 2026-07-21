@@ -259,8 +259,10 @@
         <div class="card elev-md" style="text-align:center;padding:var(--space-8) var(--space-6);align-items:center;">
           <span style="font-size:36px;color:var(--color-accent);">✓</span>
           <h3 style="margin:var(--space-2) 0 0;">Inscripción recibida</h3>
-          <p class="text-muted" style="margin:0;">Tu código de inscripción es</p>
-          <div style="font-family:ui-monospace,monospace;font-size:22px;font-weight:700;color:var(--color-accent-300);letter-spacing:0.05em;">{{ codigoGenerado }}</div>
+          <sc-if value="{{ tipoIsMiembro }}" hint-placeholder-val="{{ false }}">
+            <p class="text-muted" style="margin:0;">Tu código de inscripción es</p>
+            <div style="font-family:ui-monospace,monospace;font-size:22px;font-weight:700;color:var(--color-accent-300);letter-spacing:0.05em;">{{ codigoGenerado }}</div>
+          </sc-if>
           <p style="color:var(--color-neutral-300);font-size:13px;max-width:420px;">{{ mensajeConfirmacion }}</p>
           <button class="btn btn-secondary" onClick="{{ resetForm }}">Cargar otra inscripción</button>
         </div>
@@ -465,10 +467,10 @@ class Component extends DCLogic {
     adminError: "",
     adminDataLoading: false,
     adminDataError: "",
-    deleteConfirmCodigo: "",
-    deletingCodigo: "",
+    deleteConfirmId: "",
+    deletingId: "",
     deleteError: "",
-    estadoUpdatingCodigo: "",
+    estadoUpdatingId: "",
     estadoError: "",
     inscripciones: []
   };
@@ -510,9 +512,10 @@ class Component extends DCLogic {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.result === "ok" && data.codigo) {
+        if (data.result === "ok") {
           const nuevaFila = {
-            codigo: data.codigo,
+            id: "",
+            codigo: data.codigo || "-",
             nombre: f.nombre || "(sin nombre)",
             edad: f.edad,
             tipoLabel,
@@ -523,7 +526,7 @@ class Component extends DCLogic {
           this.setState(s => ({
             submitting: false,
             submitted: true,
-            codigoGenerado: data.codigo,
+            codigoGenerado: data.codigo || "",
             inscripciones: [nuevaFila, ...s.inscripciones]
           }));
         } else {
@@ -585,7 +588,8 @@ class Component extends DCLogic {
       .then(data => {
         if (data.result === "ok" && Array.isArray(data.rows)) {
           const mapped = data.rows.map(r => ({
-            codigo: r.Codigo || "",
+            id: r.Id || "",
+            codigo: r.Codigo || "-",
             nombre: r.Nombre || "(sin nombre)",
             edad: r.Edad,
             tipoLabel: r.Tipo || "-",
@@ -609,57 +613,57 @@ class Component extends DCLogic {
     this.setState({ adminLoggedIn: false, adminUser: "", adminPass: "", page: "landing", inscripciones: [] });
   };
 
-  onDeleteClick = (codigo) => {
-    this.setState({ deleteConfirmCodigo: codigo, deleteError: "" });
+  onDeleteClick = (id) => {
+    this.setState({ deleteConfirmId: id, deleteError: "" });
   };
 
   onDeleteCancel = () => {
-    this.setState({ deleteConfirmCodigo: "" });
+    this.setState({ deleteConfirmId: "" });
   };
 
-  onDeleteConfirm = (codigo) => {
+  onDeleteConfirm = (id) => {
     const user = this.state.adminUser;
     const pass = this.state.adminPass;
-    this.setState({ deletingCodigo: codigo, deleteError: "" });
+    this.setState({ deletingId: id, deleteError: "" });
     fetch(INSCRIPCIONES_ENDPOINT, {
       method: "POST",
       mode: "cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "delete", user, pass, codigo })
+      body: JSON.stringify({ action: "delete", user, pass, id })
     })
       .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState(s => ({
-            inscripciones: s.inscripciones.filter(r => r.codigo !== codigo),
-            deleteConfirmCodigo: "",
-            deletingCodigo: ""
+            inscripciones: s.inscripciones.filter(r => r.id !== id),
+            deleteConfirmId: "",
+            deletingId: ""
           }));
         } else {
-          this.setState({ deletingCodigo: "", deleteConfirmCodigo: "", deleteError: "No se pudo borrar esa inscripción." });
+          this.setState({ deletingId: "", deleteConfirmId: "", deleteError: "No se pudo borrar esa inscripción." });
         }
       })
       .catch(() => {
-        this.setState({ deletingCodigo: "", deleteConfirmCodigo: "", deleteError: "No se pudo conectar con la planilla." });
+        this.setState({ deletingId: "", deleteConfirmId: "", deleteError: "No se pudo conectar con la planilla." });
       });
   };
 
-  setEstado = (codigo, estado) => {
+  setEstado = (id, estado) => {
     const user = this.state.adminUser;
     const pass = this.state.adminPass;
-    this.setState({ estadoUpdatingCodigo: codigo, estadoError: "" });
+    this.setState({ estadoUpdatingId: id, estadoError: "" });
     fetch(INSCRIPCIONES_ENDPOINT, {
       method: "POST",
       mode: "cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "setEstado", user, pass, codigo, estado })
+      body: JSON.stringify({ action: "setEstado", user, pass, id, estado })
     })
       .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState(s => ({
-            estadoUpdatingCodigo: "",
-            inscripciones: s.inscripciones.map(r => r.codigo === codigo ? {
+            estadoUpdatingId: "",
+            inscripciones: s.inscripciones.map(r => r.id === id ? {
               ...r,
               estadoLabel: estado,
               estadoClass: estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
@@ -668,16 +672,16 @@ class Component extends DCLogic {
             } : r)
           }));
         } else {
-          this.setState({ estadoUpdatingCodigo: "", estadoError: "No se pudo actualizar el estado." });
+          this.setState({ estadoUpdatingId: "", estadoError: "No se pudo actualizar el estado." });
         }
       })
       .catch(() => {
-        this.setState({ estadoUpdatingCodigo: "", estadoError: "No se pudo conectar con la planilla." });
+        this.setState({ estadoUpdatingId: "", estadoError: "No se pudo conectar con la planilla." });
       });
   };
 
-  onAprobar = (codigo) => this.setEstado(codigo, "Aprobado");
-  onRechazar = (codigo) => this.setEstado(codigo, "Rechazado");
+  onAprobar = (id) => this.setEstado(id, "Aprobado");
+  onRechazar = (id) => this.setEstado(id, "Rechazado");
 
   renderVals() {
     const f = this.state.form;
@@ -689,20 +693,20 @@ class Component extends DCLogic {
     const totalEventos = this.state.inscripciones.filter(r => r.tipoLabel === "Evento puntual").length;
 
     const inscripcionesView = this.state.inscripciones.map(row => {
-      const confirmingDelete = this.state.deleteConfirmCodigo === row.codigo;
-      const deleting = this.state.deletingCodigo === row.codigo;
+      const confirmingDelete = this.state.deleteConfirmId === row.id;
+      const deleting = this.state.deletingId === row.id;
       return {
         ...row,
         confirmingDelete,
         notConfirmingDelete: !confirmingDelete,
         deleting,
-        onDeleteClick: () => this.onDeleteClick(row.codigo),
-        onDeleteConfirm: () => this.onDeleteConfirm(row.codigo),
+        onDeleteClick: () => this.onDeleteClick(row.id),
+        onDeleteConfirm: () => this.onDeleteConfirm(row.id),
         onDeleteCancel: this.onDeleteCancel,
         canAprobar: row.estadoLabel !== "Aprobado",
         canRechazar: row.estadoLabel !== "Rechazado",
-        onAprobarClick: () => this.onAprobar(row.codigo),
-        onRechazarClick: () => this.onRechazar(row.codigo)
+        onAprobarClick: () => this.onAprobar(row.id),
+        onRechazarClick: () => this.onRechazar(row.id)
       };
     });
 
