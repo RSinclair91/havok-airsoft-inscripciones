@@ -503,7 +503,19 @@
         <div class="etiqueta">Bajas totales</div>
       </div>
       <div class="havok-ficha-stat">
-        <div class="valor">{{ ficha.grado }}</div>
+        <sc-if value="{{ puedeEditarMiGrado }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:6px;align-items:center;justify-content:center;">
+            <select class="input" style="padding:4px 8px;font-size:13px;" onChange="{{ onMiGradoChange }}">
+              <sc-for list="{{ gradosOpciones }}" as="g" hint-placeholder-count="3">
+                <option value="{{ g }}" selected="{{ g === miGradoActual }}">{{ g }}</option>
+              </sc-for>
+            </select>
+            <button class="btn btn-secondary" style="padding:4px 8px;font-size:11.5px;" onClick="{{ onGuardarMiGrado }}" disabled="{{ miGradoSaving }}">Guardar</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noPuedeEditarMiGrado }}" hint-placeholder-val="{{ true }}">
+          <div class="valor">{{ ficha.grado }}</div>
+        </sc-if>
         <div class="etiqueta">Grado</div>
       </div>
       <div class="havok-ficha-stat">
@@ -513,11 +525,11 @@
     </div>
 
     <div class="card elev-sm" style="margin-bottom:var(--space-6);gap:var(--space-4);">
-      <div class="card-kicker">Cargar bajas de hoy</div>
-      <p class="text-muted" style="font-size:12.5px;margin:0;">Ingresá la cantidad de bajas causadas en la partida de hoy. Se suma al total acumulado.</p>
+      <div class="card-kicker">Cargar últimas bajas causadas</div>
+      <p class="text-muted" style="font-size:12.5px;margin:0;">Ingresá la cantidad de bajas causadas en tu última partida. Se suma al total acumulado.</p>
       <form onSubmit="{{ onSumarBajas }}" style="display:flex;gap:var(--space-3);align-items:flex-end;flex-wrap:wrap;">
         <div class="field" style="max-width:160px;">
-          <label>Bajas de hoy</label>
+          <label>Últimas bajas causadas</label>
           <input class="input" type="number" min="1" max="999" name="bajasHoy" value="{{ bajasHoy }}" onChange="{{ onBajasHoyChange }}" required="{{ true }}">
         </div>
         <button type="submit" class="btn btn-primary" disabled="{{ bajasSaving }}">Sumar al total</button>
@@ -994,6 +1006,13 @@ function formatFecha(v) {
   return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+function formatSoloFecha(v) {
+  if (!v) return "-";
+  var d = new Date(v);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 const CAROUSEL_IMAGES = [
   { src: "./assets/rifle-patch.jpg", alt: "Equipo y réplica del equipo Havok Airsoft, con el parche de la agrupación" },
   { src: "./assets/campo-equipo.jpg", alt: "Réplicas del equipo Havok Airsoft sobre neumáticos en el campo de juego" }
@@ -1011,7 +1030,7 @@ const emptyForm = () => ({
 });
 
 const ROL_LABELS = { admin: "Admin", moderador: "Moderador", miembro: "Miembro" };
-const GRADOS_DISPONIBLES = ["Recluta", "Soldado", "Cabo", "Sargento", "Teniente", "Capitán", "Comandante"];
+const GRADOS_DISPONIBLES = ["Comandante", "Tropa", "Recluta"];
 
 function resizeImageFile(file, maxSize, quality) {
   return new Promise((resolve, reject) => {
@@ -1823,14 +1842,15 @@ class Component extends DCLogic {
       .then(res => res.json())
       .then(data => {
         if (data.result === "ok" && data.ficha) {
-          this.setState({
+          this.setState(s => ({
             ficha: data.ficha,
             fichaLoading: false,
             editCallsign: data.ficha.callsign || "",
             editFotoBase64: "",
             editFotoError: "",
-            editFichaOk: false
-          });
+            editFichaOk: false,
+            gradoEdits: { ...s.gradoEdits, [data.ficha.usuario]: data.ficha.grado }
+          }));
         } else {
           this.setState({ fichaLoading: false, fichaLoadError: (data && data.message) || "No se pudo cargar tu ficha." });
         }
@@ -1964,6 +1984,9 @@ class Component extends DCLogic {
       .then(data => {
         if (data.result === "ok") {
           this.setState({ gradoSavingUser: "" });
+          if (usuario === this.state.fichaUser) {
+            this.loadMiFicha();
+          }
           this.loadRanking();
         } else {
           this.setState({ gradoSavingUser: "", gradoError: (data && data.message) || "No se pudo guardar el grado." });
@@ -1972,6 +1995,14 @@ class Component extends DCLogic {
       .catch(() => {
         this.setState({ gradoSavingUser: "", gradoError: "No se pudo conectar con el servidor." });
       });
+  };
+
+  onMiGradoChange = (e) => {
+    this.onGradoEditChange(this.state.fichaUser, e.target.value);
+  };
+
+  onGuardarMiGrado = () => {
+    this.guardarGrado(this.state.fichaUser);
   };
 
   onGoToRegisterMode = () => {
@@ -2111,7 +2142,7 @@ class Component extends DCLogic {
       rolLabel: ROL_LABELS[fichaRaw.rol] || fichaRaw.rol,
       tieneFoto: !!fichaRaw.fotoBase64,
       sinFoto: !fichaRaw.fotoBase64,
-      fechaCreadoLabel: formatFecha(fichaRaw.fechaCreado)
+      fechaCreadoLabel: formatSoloFecha(fichaRaw.fechaCreado)
     } : {};
 
     const rankingView = this.state.rankingList.map((row, i) => {
@@ -2242,6 +2273,12 @@ class Component extends DCLogic {
       fichaLoadError: this.state.fichaLoadError,
       hasFicha: !!fichaRaw,
       ficha,
+      puedeEditarMiGrado: !!fichaRaw && this.state.fichaRole === "admin",
+      noPuedeEditarMiGrado: !fichaRaw || this.state.fichaRole !== "admin",
+      miGradoActual: this.state.gradoEdits[this.state.fichaUser] !== undefined ? this.state.gradoEdits[this.state.fichaUser] : (fichaRaw ? fichaRaw.grado : ""),
+      miGradoSaving: this.state.gradoSavingUser === this.state.fichaUser,
+      onMiGradoChange: this.onMiGradoChange,
+      onGuardarMiGrado: this.onGuardarMiGrado,
       bajasHoy: this.state.bajasHoy,
       onBajasHoyChange: this.onBajasHoyChange,
       onSumarBajas: this.onSumarBajas,
