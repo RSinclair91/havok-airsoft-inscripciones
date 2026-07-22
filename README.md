@@ -145,6 +145,19 @@ La contraseña nueva la escribe y la ve únicamente quien está frente a la pant
 
 Como parte de este cambio, la contraseña del administrador (que hasta ahora se guardaba en texto plano en `ADMIN_PASS`) pasó a guardarse encriptada (hash + sal) en cuanto se usa por primera vez el panel de autogestión o se hace login exitoso; el backend sigue aceptando la contraseña vieja en texto plano como respaldo hasta que eso ocurra, así no se corta el acceso durante la transición.
 
+### Recuperar la contraseña del administrador ("¿Olvidaste tu contraseña?")
+
+Hasta ahora, si el administrador (nivel 1) se olvidaba la contraseña, no había forma de recuperarla desde el panel — había que entrar directamente al editor de Apps Script y forzar el cambio a mano en las Script Properties. Ahora la pantalla de login tiene un enlace "¿Olvidaste tu contraseña de administrador?" que resuelve esto solo, sin depender de nadie con acceso al código:
+
+1. Al tocarlo, se pide un código de un solo uso, que llega por email a `s.c.roberto.rs@gmail.com` (la misma casilla que ya recibe las notificaciones de inscripciones nuevas).
+2. El código vence a los 15 minutos y solo sirve una vez. Para evitar que alguien spamee esa casilla de emails, no se puede pedir un código nuevo si ya se pidió uno hace menos de 2 minutos.
+3. Con el código en mano, se completa un formulario con el código y la contraseña nueva (mínimo 8 caracteres, confirmada dos veces). Si el código está mal, se avisa sin revelar más información; después de 5 intentos fallidos con el mismo código, ese código se invalida y hay que pedir uno nuevo.
+4. Al confirmarse, se actualiza la contraseña del administrador (el usuario no cambia, solo la contraseña) y también se levanta cualquier bloqueo por intentos fallidos que hubiera quedado activo, para que el acceso quede limpio.
+
+Esto es exclusivo para el administrador de nivel 1: los moderadores no tienen (ni necesitan) esta opción, porque si un moderador se olvida su contraseña, el administrador puede simplemente eliminarlo y crearlo de nuevo con una contraseña provisoria (que, como se explica más abajo, el moderador va a tener que cambiar en su primer ingreso de todos modos).
+
+Se probó localmente con Playwright (aparición del enlace, formulario de código bloqueado hasta pedirlo, rechazo de un código incorrecto sin perder el formulario, rechazo de confirmación de contraseñas que no coinciden antes de siquiera llamar al backend, y vuelta a la pantalla normal de login con mensaje de éxito tras un cambio válido) y contra el backend real con una función de prueba temporal en el editor de Apps Script: pedido de código (que sí llegó por email), segundo pedido inmediato correctamente bloqueado por el límite de 2 minutos, código incorrecto rechazado, contraseña demasiado corta rechazada, cambio válido aceptado y confirmado con un login posterior, limpieza del código tras usarlo (no se puede reutilizar), y restauración de la contraseña real del administrador al terminar la prueba (la función de prueba se borró después, sin dejar rastros en las Script Properties).
+
 ### Crear y eliminar moderadores
 
 También dentro de la sección "Usuarios" (solo visible para el administrador de nivel 1), hay una tarjeta "Moderadores (nivel 2)" con:

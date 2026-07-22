@@ -367,6 +367,8 @@
   <sc-if value="{{ notAdminLoggedIn }}" hint-placeholder-val="{{ true }}">
   <div style="max-width:400px;margin:0 auto;padding:120px 24px;">
     <div class="card elev-md" style="padding:var(--space-8);gap:var(--space-4);">
+
+      <sc-if value="{{ notForgotMode }}" hint-placeholder-val="{{ true }}">
       <div style="text-align:center;margin-bottom:var(--space-2);">
         <div class="nav-brand" style="margin-right:0;">Panel admin — Havok</div>
         <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Ingresá con tus credenciales de administrador.</p>
@@ -384,8 +386,52 @@
           <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ adminError }}</div>
         </sc-if>
         <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onForgotClick }}" style="align-self:center;font-size:12.5px;">¿Olvidaste tu contraseña de administrador?</button>
         <button type="button" class="btn btn-ghost" onClick="{{ goToLanding }}" style="align-self:center;">Volver al sitio</button>
       </form>
+      </sc-if>
+
+      <sc-if value="{{ forgotMode }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;margin-bottom:var(--space-2);">
+        <div class="nav-brand" style="margin-right:0;">Recuperar contraseña</div>
+        <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Solo para el administrador (nivel 1). Te enviamos un código de un solo uso por email.</p>
+      </div>
+
+      <sc-if value="{{ notResetRequestSent }}" hint-placeholder-val="{{ true }}">
+      <form onSubmit="{{ onRequestResetCode }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+        <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ resetError }}</div>
+        </sc-if>
+        <button type="submit" class="btn btn-primary btn-block" disabled="{{ resetRequesting }}">Enviar código por email</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onBackToLogin }}" style="align-self:center;">Volver al login</button>
+      </form>
+      </sc-if>
+
+      <sc-if value="{{ resetRequestSent }}" hint-placeholder-val="{{ false }}">
+      <form onSubmit="{{ onConfirmReset }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+        <p class="text-muted" style="font-size:12.5px;margin:0;">Revisá el email y pegá el código junto con tu contraseña nueva.</p>
+        <div class="field">
+          <label>Código recibido por email</label>
+          <input class="input" name="resetCode" value="{{ resetCode }}" onChange="{{ onResetFieldChange }}" required="{{ true }}">
+        </div>
+        <div class="field">
+          <label>Contraseña nueva</label>
+          <input class="input" type="password" name="resetNewPass" value="{{ resetNewPass }}" onChange="{{ onResetFieldChange }}" required="{{ true }}">
+        </div>
+        <div class="field">
+          <label>Confirmar contraseña</label>
+          <input class="input" type="password" name="resetNewPass2" value="{{ resetNewPass2 }}" onChange="{{ onResetFieldChange }}" required="{{ true }}">
+        </div>
+        <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ resetError }}</div>
+        </sc-if>
+        <button type="submit" class="btn btn-primary btn-block" disabled="{{ resetConfirming }}">Cambiar contraseña</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onRequestResetCode }}" style="align-self:center;font-size:12.5px;">Reenviar código</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onBackToLogin }}" style="align-self:center;">Volver al login</button>
+      </form>
+      </sc-if>
+      </sc-if>
+
     </div>
   </div>
   </sc-if>
@@ -762,7 +808,15 @@ class Component extends DCLogic {
     modPassNew: "",
     modPassNew2: "",
     modPassSaving: false,
-    modPassError: ""
+    modPassError: "",
+    forgotMode: false,
+    resetRequestSent: false,
+    resetRequesting: false,
+    resetConfirming: false,
+    resetCode: "",
+    resetNewPass: "",
+    resetNewPass2: "",
+    resetError: ""
   };
 
   componentDidMount() {
@@ -874,6 +928,87 @@ class Component extends DCLogic {
   onAdminFieldChange = (e) => {
     const { name, value } = e.target;
     this.setState({ [name]: value, adminError: "" });
+  };
+
+  onForgotClick = () => {
+    this.setState({
+      forgotMode: true, resetRequestSent: false, resetError: "",
+      resetCode: "", resetNewPass: "", resetNewPass2: ""
+    });
+  };
+
+  onBackToLogin = () => {
+    this.setState({
+      forgotMode: false, resetRequestSent: false, resetError: "",
+      resetCode: "", resetNewPass: "", resetNewPass2: ""
+    });
+  };
+
+  onResetFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, resetError: "" });
+  };
+
+  onRequestResetCode = (e) => {
+    e.preventDefault();
+    this.setState({ resetRequesting: true, resetError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "requestAdminPasswordReset" })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({ resetRequesting: false, resetRequestSent: true, resetError: "" });
+        } else {
+          this.setState({ resetRequesting: false, resetError: data.message || "No se pudo enviar el código." });
+        }
+      })
+      .catch(() => {
+        this.setState({ resetRequesting: false, resetError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onConfirmReset = (e) => {
+    e.preventDefault();
+    const { resetCode, resetNewPass, resetNewPass2 } = this.state;
+    if (!resetCode || !resetCode.trim()) {
+      this.setState({ resetError: "Ingresá el código que recibiste por email." });
+      return;
+    }
+    if (!resetNewPass || resetNewPass.length < 8) {
+      this.setState({ resetError: "La contraseña debe tener al menos 8 caracteres." });
+      return;
+    }
+    if (resetNewPass !== resetNewPass2) {
+      this.setState({ resetError: "Las contraseñas no coinciden." });
+      return;
+    }
+    this.setState({ resetConfirming: true, resetError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "confirmAdminPasswordReset", code: resetCode.trim(), newPass: resetNewPass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            resetConfirming: false, forgotMode: false, resetRequestSent: false,
+            resetCode: "", resetNewPass: "", resetNewPass2: "", resetError: "",
+            adminUser: "", adminPass: "",
+            adminError: "Contraseña actualizada. Iniciá sesión con tu contraseña nueva."
+          });
+        } else {
+          this.setState({ resetConfirming: false, resetError: data.message || "No se pudo actualizar la contraseña." });
+        }
+      })
+      .catch(() => {
+        this.setState({ resetConfirming: false, resetError: "No se pudo conectar con el servidor." });
+      });
   };
 
   onAdminLogin = (e) => {
@@ -1319,6 +1454,21 @@ class Component extends DCLogic {
       onAdminFieldChange: this.onAdminFieldChange,
       onAdminLogin: this.onAdminLogin,
       adminLogout: this.adminLogout,
+      forgotMode: this.state.forgotMode,
+      notForgotMode: !this.state.forgotMode,
+      resetRequestSent: this.state.resetRequestSent,
+      notResetRequestSent: !this.state.resetRequestSent,
+      resetRequesting: this.state.resetRequesting,
+      resetConfirming: this.state.resetConfirming,
+      resetCode: this.state.resetCode,
+      resetNewPass: this.state.resetNewPass,
+      resetNewPass2: this.state.resetNewPass2,
+      resetError: this.state.resetError,
+      onForgotClick: this.onForgotClick,
+      onBackToLogin: this.onBackToLogin,
+      onResetFieldChange: this.onResetFieldChange,
+      onRequestResetCode: this.onRequestResetCode,
+      onConfirmReset: this.onConfirmReset,
       isAdminRole: this.state.adminRole === "admin",
       mustChangePassword: this.state.mustChangePassword,
       notMustChangePassword: !this.state.mustChangePassword,
