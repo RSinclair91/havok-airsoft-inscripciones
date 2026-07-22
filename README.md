@@ -157,6 +157,19 @@ Todo esto llama al mismo endpoint de Apps Script (`createModerator`, `deleteMode
 
 Se probó de punta a punta contra el backend en producción: cambio de credenciales del administrador (ida y vuelta, confirmando que las viejas dejan de funcionar y las nuevas sí, y que la restauración a las credenciales reales funcionó igual), creación de un moderador de prueba, login de ese moderador con `role: "moderador"`, rechazo de las cinco acciones reservadas al administrador al intentarlas como moderador, y eliminación del moderador de prueba al final (sin dejar ningún dato de prueba en la planilla ni en las Script Properties).
 
+### Registro de moderadores en la planilla, y reversión de aprobaciones/rechazos
+
+Roberto pidió, además, poder ver un registro de los moderadores directamente en la planilla de Google Sheets (no solo en el panel), y poder revertir una aprobación o rechazo si un moderador (o el propio administrador) se equivoca.
+
+Se agregaron dos hojas nuevas a la planilla, separadas de la hoja principal de inscripciones:
+
+- **Moderadores**: cada vez que se crea un moderador desde el panel, se agrega una fila con su usuario y la fecha de alta, con Estado "Activo". Al eliminarlo, esa fila no se borra: pasa a Estado "Eliminado" con la fecha del cambio, para conservar el historial de quién tuvo acceso y cuándo (mismo criterio que ya se usaba para las inscripciones borradas). La contraseña del moderador **no** se guarda acá ni en ningún otro lado en texto plano — solo queda su versión encriptada (hash + sal) en las Script Properties, igual que la del administrador.
+- **HistorialAcciones**: cada vez que alguien (administrador o moderador) aprueba o rechaza una solicitud, se agrega una fila con la fecha, quién lo hizo, su rol, el Id de la inscripción, y el estado anterior y nuevo.
+
+Con ese historial, el administrador de nivel 1 tiene ahora un botón **"Revertir"** en cada fila de la tabla de solicitudes, disponible solo durante los **30 minutos** posteriores al cambio de estado (pasado ese lapso, el botón deja de aparecer). Al usarlo, el backend busca el último cambio registrado para esa inscripción y la devuelve al estado que tenía antes, dejando además una nueva fila en `HistorialAcciones` con la reversión. Esto le da al administrador una ventana corta para deshacer un error propio o de un moderador, sin tener que editar la planilla a mano. Los moderadores no ven este botón ni pueden llamar a esta acción (`revertirEstado`) directamente: está reservada al administrador de nivel 1, igual que borrar inscripciones.
+
+Se probó localmente (con datos simulados) que el botón aparece solo en filas con un cambio de estado de menos de 30 minutos, que al usarlo se actualiza el estado mostrado en el panel, y que un intento fuera de esa ventana devuelve un error explicando por qué. También se verificó mediante una función de prueba temporal ejecutada directamente en el editor de Apps Script (sin pasar por el login, y borrada después de usarla) que la escritura en la hoja "Moderadores", el marcado como "Eliminado", el registro en "HistorialAcciones" y el cálculo de la ventana de 30 minutos funcionan correctamente contra la planilla real.
+
 ## Filtro antispam en el formulario de inscripción (honeypot + tiempo mínimo)
 
 El formulario público de inscripción no tenía ninguna protección contra envíos automatizados (bots): cualquiera que encontrara la URL del endpoint de Apps Script (que es pública, porque está en el código fuente de la página) podía mandarle inscripciones falsas en bucle. Se agregó una protección liviana, sin dependencias externas ni fricción para la persona que se inscribe de verdad.

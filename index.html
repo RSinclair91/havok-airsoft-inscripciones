@@ -181,6 +181,9 @@
     <sc-if value="{{ estadoError }}" hint-placeholder-val="{{ false }}">
       <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ estadoError }}</div>
     </sc-if>
+    <sc-if value="{{ revertError }}" hint-placeholder-val="{{ false }}">
+      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ revertError }}</div>
+    </sc-if>
     <sc-if value="{{ noInscripciones }}" hint-placeholder-val="{{ false }}">
       <div class="text-muted" style="margin-bottom:var(--space-4);">Todavía no hay inscripciones cargadas.</div>
     </sc-if>
@@ -244,6 +247,9 @@
                     </sc-if>
                     <sc-if value="{{ row.canDelete }}" hint-placeholder-val="{{ true }}">
                       <button class="btn btn-secondary" onClick="{{ row.onDeleteClick }}" style="padding:4px 10px;font-size:12px;">Borrar</button>
+                    </sc-if>
+                    <sc-if value="{{ row.canRevert }}" hint-placeholder-val="{{ false }}">
+                      <button class="btn btn-ghost" onClick="{{ row.onRevertirClick }}" style="padding:4px 10px;font-size:12px;" title="Revertir el último cambio de estado (disponible por 30 minutos)">{{ row.revertLabel }}</button>
                     </sc-if>
                   </div>
                 </sc-if>
@@ -673,6 +679,8 @@ const CAROUSEL_IMAGES = [
   { src: "./assets/campo-equipo.jpg", alt: "Réplicas del equipo Havok Airsoft sobre neumáticos en el campo de juego" }
 ];
 
+const REVERT_WINDOW_MIN = 30;
+
 const emptyForm = () => ({
   tipo: "",
   nombre: "", dni: "", edad: "", telefono: "", email: "",
@@ -722,17 +730,24 @@ class Component extends DCLogic {
     modCreating: false,
     modCreateError: "",
     modDeletingUser: "",
-    modDeleteError: ""
+    modDeleteError: "",
+    revertingId: "",
+    revertError: "",
+    nowTick: 0
   };
 
   componentDidMount() {
     this._carouselTimer = setInterval(() => {
       this.setState(s => ({ carouselIndex: (s.carouselIndex + 1) % CAROUSEL_IMAGES.length }));
     }, 5000);
+    this._revertTickTimer = setInterval(() => {
+      this.setState(s => ({ nowTick: s.nowTick + 1 }));
+    }, 30000);
   }
 
   componentWillUnmount() {
     clearInterval(this._carouselTimer);
+    clearInterval(this._revertTickTimer);
   }
 
   goToSlide = (i) => {
@@ -883,6 +898,7 @@ class Component extends DCLogic {
             estadoClass: r.Estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
             estadoStyle: r.Estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : "",
             estadoFecha: formatFecha(r.FechaEstado),
+            fechaEstadoRaw: r.FechaEstado || "",
             dni: r.DNI || "",
             telefono: r.Telefono || "",
             email: r.Email || "",
@@ -1108,7 +1124,8 @@ class Component extends DCLogic {
               estadoLabel: estado,
               estadoClass: estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
               estadoStyle: estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : "",
-              estadoFecha: formatFecha(new Date())
+              estadoFecha: formatFecha(new Date()),
+              fechaEstadoRaw: new Date().toISOString()
             } : r)
           }));
         } else {
@@ -1122,6 +1139,40 @@ class Component extends DCLogic {
 
   onAprobar = (id) => this.setEstado(id, "Aprobado");
   onRechazar = (id) => this.setEstado(id, "Rechazado");
+
+  revertirEstado = (id) => {
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
+    this.setState({ revertingId: id, revertError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "revertirEstado", user, pass, id })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          const estado = data.estado || "Pendiente";
+          this.setState(s => ({
+            revertingId: "",
+            inscripciones: s.inscripciones.map(r => r.id === id ? {
+              ...r,
+              estadoLabel: estado,
+              estadoClass: estado === "Aprobado" ? "tag tag-accent" : "tag tag-outline",
+              estadoStyle: estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : "",
+              estadoFecha: formatFecha(new Date()),
+              fechaEstadoRaw: new Date().toISOString()
+            } : r)
+          }));
+        } else {
+          this.setState({ revertingId: "", revertError: (data && data.message) || "No se pudo revertir esa acción." });
+        }
+      })
+      .catch(() => {
+        this.setState({ revertingId: "", revertError: "No se pudo conectar con la planilla." });
+      });
+  };
 
   renderVals() {
     const f = this.state.form;
@@ -1148,9 +1199,12 @@ class Component extends DCLogic {
       onDotClick: () => this.goToSlide(i)
     }));
 
+    const nowMs = Date.now();
     const inscripcionesView = this.state.inscripciones.map(row => {
       const confirmingDelete = this.state.deleteConfirmId === row.id;
       const deleting = this.state.deletingId === row.id;
+      const fechaEstadoMs = row.fechaEstadoRaw ? new Date(row.fechaEstadoRaw).getTime() : NaN;
+      const withinRevertWindow = !isNaN(fechaEstadoMs) && (nowMs - fechaEstadoMs) <= REVERT_WINDOW_MIN * 60000;
       return {
         ...row,
         confirmingDelete,
@@ -1163,7 +1217,11 @@ class Component extends DCLogic {
         canAprobar: row.estadoLabel !== "Aprobado",
         canRechazar: row.estadoLabel !== "Rechazado",
         onAprobarClick: () => this.onAprobar(row.id),
-        onRechazarClick: () => this.onRechazar(row.id)
+        onRechazarClick: () => this.onRechazar(row.id),
+        canRevert: this.state.adminRole === "admin" && withinRevertWindow,
+        reverting: this.state.revertingId === row.id,
+        revertLabel: this.state.revertingId === row.id ? "Revirtiendo…" : "Revertir",
+        onRevertirClick: () => this.revertirEstado(row.id)
       };
     });
 
@@ -1206,6 +1264,7 @@ class Component extends DCLogic {
       modCreating: this.state.modCreating,
       modCreateError: this.state.modCreateError,
       modDeleteError: this.state.modDeleteError,
+      revertError: this.state.revertError,
       adminDataLoading: this.state.adminDataLoading,
       adminDataError: this.state.adminDataError,
       deleteError: this.state.deleteError,
