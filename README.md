@@ -32,6 +32,17 @@ El landing usaba antes solo el escudo como imagen (repetido en dos archivos idé
 
 Nada de esto tocó la lógica del formulario, el panel admin ni el backend — son cambios de estilo y de marcado estático dentro de `index.html`.
 
+## Carrusel de fotos en "Nosotros"
+
+La sección "Nosotros" mostraba una sola foto fija (`rifle-patch.jpg`). Ahora es un pequeño carrusel que rota automáticamente entre varias fotos del equipo, con puntos de navegación abajo para pasar manualmente a una foto específica.
+
+- Fotos actuales en el carrusel: `rifle-patch.jpg` y `campo-equipo.jpg` (esta última ya se usaba como fondo del hero; se reutiliza también acá).
+- Rota sola cada 5 segundos mientras la página está abierta; al hacer clic en un punto de navegación, salta directo a esa foto y el ciclo automático sigue desde ahí.
+- El escudo (`havok-escudo.jpeg`) sigue flotando como insignia circular sobre la esquina de la foto activa, igual que antes.
+- Está pensado para sumar más fotos fácilmente: alcanza con agregar el archivo a `assets/` y sumarlo a la lista `CAROUSEL_IMAGES` en `index.html`. Queda pendiente sumar una tercera foto (del equipo en el campo) apenas esté disponible el archivo.
+
+Se verificó localmente con capturas de pantalla que el carrusel muestra la cantidad correcta de fotos y puntos, y que al hacer clic en un punto cambia efectivamente a la foto correspondiente.
+
 ## Tipo de inscripción: elección obligatoria y más clara
 
 Se detectó un caso real de confusión: alguien que quería anotarse como "Miembro del equipo" terminó enviando la inscripción como "Evento puntual" sin darse cuenta, porque esa opción venía preseleccionada por defecto y las dos opciones se distinguían solo por un borde fino apenas visible.
@@ -115,6 +126,36 @@ Se hicieron dos cambios:
 - **Bloqueo temporal (rate limiting)**: el backend ahora cuenta los intentos fallidos de login (compartido entre `adminLogin`, `list`, `delete` y `setEstado`, ya que las cuatro acciones validan usuario/contraseña) usando `CacheService`. Al quinto intento fallido seguido, cualquier acción que requiera login queda bloqueada durante 15 minutos, devolviendo el mensaje "Demasiados intentos fallidos. Proba de nuevo en X minutos." — incluso si después se manda la contraseña correcta. Un login exitoso resetea el contador. Esto significa que si el propio Roberto se equivoca de contraseña 5 veces seguidas, también va a tener que esperar los 15 minutos; es una limitación conocida y aceptada de este tipo de protección simple (no hay forma de distinguir "intentos legítimos con error de tipeo" de "un ataque").
 
 Se probó de punta a punta contra el backend en producción: se confirmó que las credenciales viejas ya no funcionan, que las nuevas sí, que el quinto intento fallido dispara el bloqueo (con las cuatro acciones respetándolo), y que ni siquiera la contraseña correcta pasa mientras dura el bloqueo.
+
+### Dos roles: administrador (nivel 1) y moderadores (nivel 2)
+
+El panel admin dejó de ser un único usuario: ahora hay dos niveles de acceso.
+
+- **Administrador (nivel 1)**: es el usuario original. Puede ver y aprobar/rechazar inscripciones, borrar inscripciones, abrir la planilla de Google Sheets, cambiar su propio usuario/contraseña, y crear o eliminar moderadores.
+- **Moderador (nivel 2)**: un tipo de usuario nuevo, pensado para sumar gente que ayude a revisar inscripciones sin darle acceso a todo. Un moderador puede ver la tabla de inscripciones (con los mismos datos que ve el administrador: DNI, contacto, contacto de emergencia, autorización de adulto, etc.) y aprobar o rechazar solicitudes. **No puede** borrar inscripciones, no puede abrir el enlace a la planilla de Google Sheets desde el panel, no ve la sección "Usuarios", y no puede crear, eliminar ni listar otros moderadores ni cambiar ninguna credencial. El backend rechaza cualquiera de esas acciones con "No autorizado" aunque el moderador conozca la URL del endpoint y arme el pedido a mano.
+- Al loguearse, el panel identifica automáticamente qué rol tiene la cuenta (`role: "admin"` o `role: "moderador"`) y muestra u oculta las secciones correspondientes. La lógica de bloqueo por intentos fallidos (5 intentos → 15 minutos) es la misma para ambos roles, compartida entre sí.
+
+Las credenciales de los moderadores se guardan en las Script Properties del proyecto de Apps Script (igual que las del administrador), con la contraseña siempre encriptada (hash + sal), nunca en texto plano.
+
+### Panel de autogestión de credenciales ("Mis credenciales")
+
+El administrador (nivel 1) ya no necesita pedirle a nadie que le cambie el usuario o la contraseña a mano desde Apps Script: dentro del panel admin, en la sección "Usuarios", hay una tarjeta "Mis credenciales" donde puede escribir su nuevo usuario y contraseña y guardarlos ahí mismo. El cambio pide la contraseña actual para autorizarlo (ya está logueado, así que el backend usa esas mismas credenciales) y, al confirmarse, cierra la sesión automáticamente para que haya que volver a entrar con los datos nuevos — así no queda ninguna sesión vieja dando vueltas en el navegador.
+
+La contraseña nueva la escribe y la ve únicamente quien está frente a la pantalla del panel: no pasa por ningún otro lado ni queda registrada en ningún chat ni documento.
+
+Como parte de este cambio, la contraseña del administrador (que hasta ahora se guardaba en texto plano en `ADMIN_PASS`) pasó a guardarse encriptada (hash + sal) en cuanto se usa por primera vez el panel de autogestión o se hace login exitoso; el backend sigue aceptando la contraseña vieja en texto plano como respaldo hasta que eso ocurra, así no se corta el acceso durante la transición.
+
+### Crear y eliminar moderadores
+
+También dentro de la sección "Usuarios" (solo visible para el administrador de nivel 1), hay una tarjeta "Moderadores (nivel 2)" con:
+
+- Una lista de los moderadores existentes, con la fecha en que se crearon.
+- Un formulario para crear uno nuevo (usuario + contraseña).
+- Un botón "Eliminar" junto a cada moderador de la lista, para darlo de baja.
+
+Todo esto llama al mismo endpoint de Apps Script (`createModerator`, `deleteModerator`, `listModerators`), validado siempre con las credenciales del administrador de nivel 1 — un moderador no puede acceder a ninguna de estas tres acciones aunque las llame directamente.
+
+Se probó de punta a punta contra el backend en producción: cambio de credenciales del administrador (ida y vuelta, confirmando que las viejas dejan de funcionar y las nuevas sí, y que la restauración a las credenciales reales funcionó igual), creación de un moderador de prueba, login de ese moderador con `role: "moderador"`, rechazo de las cinco acciones reservadas al administrador al intentarlas como moderador, y eliminación del moderador de prueba al final (sin dejar ningún dato de prueba en la planilla ni en las Script Properties).
 
 ## Filtro antispam en el formulario de inscripción (honeypot + tiempo mínimo)
 

@@ -80,6 +80,20 @@
   }
   .havok-badge-float img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
 
+  .havok-carousel-slide {
+    position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease; z-index: 0;
+  }
+  .havok-carousel-slide.is-active { opacity: 1; z-index: 1; }
+  .havok-carousel-dots {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    display: flex; gap: 7px; z-index: 2;
+  }
+  .havok-carousel-dot {
+    width: 8px; height: 8px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
+    background: rgba(255,255,255,.45); transition: all .25s ease;
+  }
+  .havok-carousel-dot.is-active { background: var(--color-accent); width: 20px; border-radius: 4px; }
+
   .havok-banner {
     position: relative; padding: 64px var(--space-6); text-align: center; overflow: hidden;
     background-image:
@@ -129,10 +143,16 @@
   <div style="max-width:1100px;margin:0 auto;padding:var(--space-8) var(--space-6) 80px;">
     <div class="nav" style="padding-left:0;padding-right:0;margin-bottom:var(--space-8);">
       <div class="nav-brand">Panel admin — Havok</div>
-      <a href="{{ sheetUrl }}" target="_blank" class="btn btn-primary">Abrir Google Sheet</a>
+      <sc-if value="{{ isAdminRole }}" hint-placeholder-val="{{ true }}">
+        <button class="btn btn-secondary" onClick="{{ goToSolicitudes }}">Solicitudes</button>
+        <button class="btn btn-secondary" onClick="{{ goToUsuarios }}">Usuarios</button>
+        <a href="{{ sheetUrl }}" target="_blank" class="btn btn-primary">Abrir Google Sheet</a>
+      </sc-if>
       <button class="btn btn-secondary" onClick="{{ adminLogout }}">Cerrar sesión</button>
       <button class="btn btn-secondary" onClick="{{ goToLanding }}">← Volver al sitio</button>
     </div>
+
+    <sc-if value="{{ isSolicitudesView }}" hint-placeholder-val="{{ true }}">
 
     <div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-6);flex-wrap:wrap;">
       <div class="card elev-sm" style="flex:1;min-width:160px;">
@@ -222,7 +242,9 @@
                     <sc-if value="{{ row.canRechazar }}" hint-placeholder-val="{{ true }}">
                       <button class="btn btn-secondary" onClick="{{ row.onRechazarClick }}" style="padding:4px 10px;font-size:12px;color:#c96a5a;border-color:#c96a5a;">Rechazar</button>
                     </sc-if>
-                    <button class="btn btn-secondary" onClick="{{ row.onDeleteClick }}" style="padding:4px 10px;font-size:12px;">Borrar</button>
+                    <sc-if value="{{ row.canDelete }}" hint-placeholder-val="{{ true }}">
+                      <button class="btn btn-secondary" onClick="{{ row.onDeleteClick }}" style="padding:4px 10px;font-size:12px;">Borrar</button>
+                    </sc-if>
                   </div>
                 </sc-if>
               </td>
@@ -230,6 +252,80 @@
           </sc-for>
         </tbody>
       </table>
+    </div>
+    </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isUsuariosView }}" hint-placeholder-val="{{ false }}">
+    <div class="havok-grid-2" style="gap:var(--space-6);align-items:start;">
+      <div class="card elev-sm" style="gap:var(--space-4);">
+        <div class="card-kicker">Mis credenciales</div>
+        <p class="text-muted" style="font-size:12.5px;margin:0;">Cambiá tu usuario y contraseña de administrador. Vas a tener que volver a iniciar sesión después de guardar.</p>
+        <form onSubmit="{{ onChangeCredentials }}" style="display:flex;flex-direction:column;gap:var(--space-3);">
+          <div class="field">
+            <label>Nuevo usuario</label>
+            <input class="input" name="credNewUser" value="{{ credNewUser }}" onChange="{{ onCredFieldChange }}" required="{{ true }}">
+          </div>
+          <div class="field">
+            <label>Nueva contraseña</label>
+            <input class="input" type="password" name="credNewPass" value="{{ credNewPass }}" onChange="{{ onCredFieldChange }}" required="{{ true }}">
+          </div>
+          <div class="field">
+            <label>Confirmar contraseña</label>
+            <input class="input" type="password" name="credNewPass2" value="{{ credNewPass2 }}" onChange="{{ onCredFieldChange }}" required="{{ true }}">
+          </div>
+          <sc-if value="{{ credError }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ credError }}</div>
+          </sc-if>
+          <button type="submit" class="btn btn-primary" disabled="{{ credSaving }}">Guardar cambios</button>
+        </form>
+      </div>
+
+      <div class="card elev-sm" style="gap:var(--space-4);">
+        <div class="card-kicker">Moderadores (nivel 2)</div>
+        <p class="text-muted" style="font-size:12.5px;margin:0;">Pueden ver solicitudes y aprobar/rechazar, pero no pueden borrar inscripciones, gestionar usuarios ni acceder a la planilla.</p>
+
+        <sc-if value="{{ moderadoresLoading }}" hint-placeholder-val="{{ false }}">
+          <div class="text-muted">Cargando usuarios...</div>
+        </sc-if>
+        <sc-if value="{{ moderadoresError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ moderadoresError }}</div>
+        </sc-if>
+        <sc-if value="{{ noModeradores }}" hint-placeholder-val="{{ false }}">
+          <div class="text-muted">Todavía no creaste moderadores.</div>
+        </sc-if>
+        <sc-if value="{{ hasModeradores }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+            <sc-for list="{{ moderadoresView }}" as="mod" hint-placeholder-count="2">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);padding:8px 0;border-bottom:1px solid var(--color-divider);">
+                <div>
+                  <div style="font-weight:500;">{{ mod.user }}</div>
+                  <div style="font-size:11.5px;color:var(--color-neutral-500);">Creado: {{ mod.creadoFecha }}</div>
+                </div>
+                <button class="btn btn-secondary" onClick="{{ mod.onDeleteClick }}" style="padding:4px 10px;font-size:12px;color:#c96a5a;border-color:#c96a5a;">Eliminar</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ modDeleteError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ modDeleteError }}</div>
+        </sc-if>
+
+        <form onSubmit="{{ onCreateModerator }}" style="display:flex;flex-direction:column;gap:var(--space-3);border-top:1px solid var(--color-divider);padding-top:var(--space-4);">
+          <div class="field">
+            <label>Nuevo usuario moderador</label>
+            <input class="input" name="newModUser" value="{{ newModUser }}" onChange="{{ onNewModFieldChange }}" required="{{ true }}">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input class="input" type="password" name="newModPass" value="{{ newModPass }}" onChange="{{ onNewModFieldChange }}" required="{{ true }}">
+          </div>
+          <sc-if value="{{ modCreateError }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ modCreateError }}</div>
+          </sc-if>
+          <button type="submit" class="btn btn-secondary" disabled="{{ modCreating }}">Crear moderador</button>
+        </form>
+      </div>
     </div>
     </sc-if>
   </div>
@@ -325,7 +421,14 @@
   <section id="nosotros" style="padding:90px var(--space-6);">
     <div class="havok-grid-2" style="max-width:1100px;margin:0 auto;gap:var(--space-8);align-items:center;">
       <div class="havok-photo-frame" style="margin:0 var(--space-2) var(--space-2) 0;">
-        <img src="./assets/rifle-patch.jpg" alt="Equipo y réplica del equipo Havok Airsoft, con el parche de la agrupación">
+        <sc-for list="{{ carouselSlides }}" as="slide" hint-placeholder-count="2">
+          <img src="{{ slide.src }}" alt="{{ slide.alt }}" class="{{ slide.slideClass }}">
+        </sc-for>
+        <div class="havok-carousel-dots">
+          <sc-for list="{{ carouselSlides }}" as="slide" hint-placeholder-count="2">
+            <button type="button" class="{{ slide.dotClass }}" onClick="{{ slide.onDotClick }}" aria-label="{{ slide.label }}"></button>
+          </sc-for>
+        </div>
         <div class="havok-badge-float">
           <img src="./assets/havok-escudo.jpeg" alt="Escudo Havok Airsoft Team">
         </div>
@@ -565,6 +668,11 @@ function formatFecha(v) {
   return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+const CAROUSEL_IMAGES = [
+  { src: "./assets/rifle-patch.jpg", alt: "Equipo y réplica del equipo Havok Airsoft, con el parche de la agrupación" },
+  { src: "./assets/campo-equipo.jpg", alt: "Réplicas del equipo Havok Airsoft sobre neumáticos en el campo de juego" }
+];
+
 const emptyForm = () => ({
   tipo: "",
   nombre: "", dni: "", edad: "", telefono: "", email: "",
@@ -581,6 +689,7 @@ class Component extends DCLogic {
 
   state = {
     page: "landing",
+    carouselIndex: 0,
     form: emptyForm(),
     submitted: false,
     codigoGenerado: "",
@@ -589,6 +698,8 @@ class Component extends DCLogic {
     adminLoggedIn: false,
     adminUser: "",
     adminPass: "",
+    adminRole: "",
+    adminView: "solicitudes",
     adminError: "",
     adminDataLoading: false,
     adminDataError: "",
@@ -597,7 +708,35 @@ class Component extends DCLogic {
     deleteError: "",
     estadoUpdatingId: "",
     estadoError: "",
-    inscripciones: []
+    inscripciones: [],
+    credNewUser: "",
+    credNewPass: "",
+    credNewPass2: "",
+    credSaving: false,
+    credError: "",
+    moderadores: [],
+    moderadoresLoading: false,
+    moderadoresError: "",
+    newModUser: "",
+    newModPass: "",
+    modCreating: false,
+    modCreateError: "",
+    modDeletingUser: "",
+    modDeleteError: ""
+  };
+
+  componentDidMount() {
+    this._carouselTimer = setInterval(() => {
+      this.setState(s => ({ carouselIndex: (s.carouselIndex + 1) % CAROUSEL_IMAGES.length }));
+    }, 5000);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this._carouselTimer);
+  }
+
+  goToSlide = (i) => {
+    this.setState({ carouselIndex: i });
   };
 
   onFieldChange = (e) => {
@@ -711,7 +850,7 @@ class Component extends DCLogic {
       .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
-          this.setState({ adminLoggedIn: true, adminError: "" });
+          this.setState({ adminLoggedIn: true, adminRole: data.role || "admin", adminError: "" });
           this.loadInscripciones(user, pass);
         } else {
           this.setState({ adminError: "Usuario o contraseña incorrectos." });
@@ -764,7 +903,154 @@ class Component extends DCLogic {
   };
 
   adminLogout = () => {
-    this.setState({ adminLoggedIn: false, adminUser: "", adminPass: "", page: "landing", inscripciones: [] });
+    this.setState({
+      adminLoggedIn: false, adminUser: "", adminPass: "", adminRole: "", adminView: "solicitudes",
+      page: "landing", inscripciones: [], moderadores: []
+    });
+  };
+
+  goToUsuarios = () => {
+    this.setState({ adminView: "usuarios" });
+    this.loadModeradores();
+  };
+
+  goToSolicitudes = () => this.setState({ adminView: "solicitudes" });
+
+  loadModeradores = () => {
+    this.setState({ moderadoresLoading: true, moderadoresError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "listModerators", user: this.state.adminUser, pass: this.state.adminPass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({ moderadores: data.moderadores || [], moderadoresLoading: false });
+        } else {
+          this.setState({ moderadoresLoading: false, moderadoresError: data.message || "No se pudieron cargar los usuarios." });
+        }
+      })
+      .catch(() => {
+        this.setState({ moderadoresLoading: false, moderadoresError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onCredFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, credError: "" });
+  };
+
+  onChangeCredentials = (e) => {
+    e.preventDefault();
+    const { credNewUser, credNewPass, credNewPass2 } = this.state;
+    if (!credNewUser || credNewUser.trim().length < 3) {
+      this.setState({ credError: "El usuario debe tener al menos 3 caracteres." });
+      return;
+    }
+    if (!credNewPass || credNewPass.length < 8) {
+      this.setState({ credError: "La contraseña debe tener al menos 8 caracteres." });
+      return;
+    }
+    if (credNewPass !== credNewPass2) {
+      this.setState({ credError: "Las contraseñas no coinciden." });
+      return;
+    }
+    this.setState({ credSaving: true, credError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "changeCredentials",
+        user: this.state.adminUser,
+        pass: this.state.adminPass,
+        newUser: credNewUser.trim(),
+        newPass: credNewPass
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            credSaving: false, adminLoggedIn: false, adminRole: "", adminUser: "", adminPass: "",
+            adminView: "solicitudes", inscripciones: [], moderadores: [],
+            credNewUser: "", credNewPass: "", credNewPass2: "",
+            adminError: "Credenciales actualizadas. Iniciá sesión de nuevo con tus datos nuevos."
+          });
+        } else {
+          this.setState({ credSaving: false, credError: data.message || "No se pudieron actualizar las credenciales." });
+        }
+      })
+      .catch(() => {
+        this.setState({ credSaving: false, credError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onNewModFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, modCreateError: "" });
+  };
+
+  onCreateModerator = (e) => {
+    e.preventDefault();
+    const { newModUser, newModPass } = this.state;
+    if (!newModUser || newModUser.trim().length < 3) {
+      this.setState({ modCreateError: "El usuario debe tener al menos 3 caracteres." });
+      return;
+    }
+    if (!newModPass || newModPass.length < 8) {
+      this.setState({ modCreateError: "La contraseña debe tener al menos 8 caracteres." });
+      return;
+    }
+    this.setState({ modCreating: true, modCreateError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "createModerator",
+        user: this.state.adminUser,
+        pass: this.state.adminPass,
+        newModUser: newModUser.trim(),
+        newModPass
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({ modCreating: false, newModUser: "", newModPass: "" });
+          this.loadModeradores();
+        } else {
+          this.setState({ modCreating: false, modCreateError: data.message || "No se pudo crear el usuario." });
+        }
+      })
+      .catch(() => {
+        this.setState({ modCreating: false, modCreateError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onDeleteModerator = (targetUser) => {
+    this.setState({ modDeletingUser: targetUser, modDeleteError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "deleteModerator", user: this.state.adminUser, pass: this.state.adminPass, targetUser })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({ modDeletingUser: "" });
+          this.loadModeradores();
+        } else {
+          this.setState({ modDeletingUser: "", modDeleteError: data.message || "No se pudo eliminar el usuario." });
+        }
+      })
+      .catch(() => {
+        this.setState({ modDeletingUser: "", modDeleteError: "No se pudo conectar con el servidor." });
+      });
   };
 
   onDeleteClick = (id) => {
@@ -846,6 +1132,22 @@ class Component extends DCLogic {
     const totalMiembros = this.state.inscripciones.filter(r => r.tipoLabel === "Miembro").length;
     const totalEventos = this.state.inscripciones.filter(r => r.tipoLabel === "Evento puntual").length;
 
+    const moderadoresView = this.state.moderadores.map(mod => ({
+      user: mod.user,
+      creadoFecha: formatFecha(mod.creado),
+      deleting: this.state.modDeletingUser === mod.user,
+      onDeleteClick: () => this.onDeleteModerator(mod.user)
+    }));
+
+    const carouselSlides = CAROUSEL_IMAGES.map((img, i) => ({
+      src: img.src,
+      alt: img.alt,
+      label: "Ver foto " + (i + 1),
+      slideClass: i === this.state.carouselIndex ? "havok-carousel-slide is-active" : "havok-carousel-slide",
+      dotClass: i === this.state.carouselIndex ? "havok-carousel-dot is-active" : "havok-carousel-dot",
+      onDotClick: () => this.goToSlide(i)
+    }));
+
     const inscripcionesView = this.state.inscripciones.map(row => {
       const confirmingDelete = this.state.deleteConfirmId === row.id;
       const deleting = this.state.deletingId === row.id;
@@ -857,6 +1159,7 @@ class Component extends DCLogic {
         onDeleteClick: () => this.onDeleteClick(row.id),
         onDeleteConfirm: () => this.onDeleteConfirm(row.id),
         onDeleteCancel: this.onDeleteCancel,
+        canDelete: this.state.adminRole === "admin",
         canAprobar: row.estadoLabel !== "Aprobado",
         canRechazar: row.estadoLabel !== "Rechazado",
         onAprobarClick: () => this.onAprobar(row.id),
@@ -879,6 +1182,30 @@ class Component extends DCLogic {
       onAdminFieldChange: this.onAdminFieldChange,
       onAdminLogin: this.onAdminLogin,
       adminLogout: this.adminLogout,
+      isAdminRole: this.state.adminRole === "admin",
+      isSolicitudesView: this.state.adminView !== "usuarios",
+      isUsuariosView: this.state.adminView === "usuarios",
+      goToUsuarios: this.goToUsuarios,
+      goToSolicitudes: this.goToSolicitudes,
+      credNewUser: this.state.credNewUser,
+      credNewPass: this.state.credNewPass,
+      credNewPass2: this.state.credNewPass2,
+      onCredFieldChange: this.onCredFieldChange,
+      onChangeCredentials: this.onChangeCredentials,
+      credSaving: this.state.credSaving,
+      credError: this.state.credError,
+      moderadoresLoading: this.state.moderadoresLoading,
+      moderadoresError: this.state.moderadoresError,
+      hasModeradores: moderadoresView.length > 0,
+      noModeradores: moderadoresView.length === 0 && !this.state.moderadoresLoading,
+      moderadoresView,
+      newModUser: this.state.newModUser,
+      newModPass: this.state.newModPass,
+      onNewModFieldChange: this.onNewModFieldChange,
+      onCreateModerator: this.onCreateModerator,
+      modCreating: this.state.modCreating,
+      modCreateError: this.state.modCreateError,
+      modDeleteError: this.state.modDeleteError,
       adminDataLoading: this.state.adminDataLoading,
       adminDataError: this.state.adminDataError,
       deleteError: this.state.deleteError,
@@ -888,6 +1215,7 @@ class Component extends DCLogic {
       sheetUrl: "https://docs.google.com/spreadsheets/d/1GyTeYw1uLySXn9UhW8YSmuWzfQ_qg_orwT8uSMfFWgU/edit",
       reglamentoSecciones: REGLAMENTO_SECCIONES,
       reglas: REGLAS,
+      carouselSlides,
       form: f,
       isMinor,
       tipoIsEvento,
