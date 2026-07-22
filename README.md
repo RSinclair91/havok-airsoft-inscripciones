@@ -262,7 +262,7 @@ Roberto pidió una ficha individual para cada persona del equipo — con lugar p
 
 Antes de tener ficha, alguien tiene que ser ya un miembro **aprobado** (Tipo "Miembro del equipo", Estado "Aprobado" en la planilla principal de inscripciones). Desde el botón **"Mi Ficha"** en la barra superior del sitio, esa persona entra a una pantalla de login separada del panel admin; ahí puede elegir "¿Sos miembro aprobado y todavía no creaste tu usuario?" para llegar a un formulario de alta que pide su DNI y el Código de inscripción que recibió al anotarse (`HVK-2026-####`), un callsign opcional, un usuario y contraseña a elección, y **una foto** (obligatoria). El backend valida ese DNI + Código contra la fila aprobada correspondiente antes de crear la cuenta, así que nadie puede crearse una ficha sin haber sido aprobado antes como miembro, y no se puede crear dos veces una cuenta para la misma inscripción.
 
-El administrador y los moderadores no pasan por este alta: como ya tienen sus propias credenciales (las mismas del panel admin), su ficha se crea automáticamente la primera vez que entran a "Mi Ficha" con esas credenciales, con grado por defecto "Comandante" (admin) u "Oficial" (moderador) y 0 bajas, y pueden completar después su callsign y foto desde su propia ficha.
+El administrador y los moderadores no pasan por este alta: como ya tienen sus propias credenciales (las mismas del panel admin), su ficha se crea automáticamente la primera vez que entran a "Mi Ficha" con esas credenciales, con grado por defecto "Comandante" (admin) o "Tropa" (moderador) y 0 bajas, y pueden completar después su callsign y foto desde su propia ficha. Además, desde dentro del panel admin hay un botón **"Mi Ficha"** que entra directo a la ficha reutilizando el usuario y contraseña ya ingresados, sin pedir loguearse una segunda vez — antes solo se podía llegar volviendo al sitio público.
 
 ### La foto se guarda en la propia planilla, no en Google Drive
 
@@ -277,11 +277,13 @@ Se agregaron dos hojas nuevas, separadas de las de inscripciones:
 
 ### Qué puede hacer cada nivel
 
-- **Miembro**: ve solo su propia ficha (foto, callsign, grado, bajas totales y fecha desde que es miembro), puede cargar la cantidad de bajas del día (se suma al total, no lo reemplaza) y puede editar su callsign y su foto. No ve la ficha de nadie más ni el ranking del equipo.
-- **Moderador**: además de su propia ficha, ve el **ranking del equipo** — el listado completo de fichas ordenado por bajas totales (de mayor a menor), con foto, callsign, rol y grado de cada persona. No puede cambiar el grado de nadie.
-- **Administrador**: todo lo anterior, más la posibilidad de asignarle un grado nuevo a cualquier ficha desde el propio ranking (un selector con los grados disponibles — Recluta, Soldado, Cabo, Sargento, Teniente, Capitán, Comandante — y un botón "Guardar" por fila).
+- **Miembro**: ve solo su propia ficha (foto, callsign, grado, bajas totales y fecha desde que es miembro), puede cargar la cantidad de últimas bajas causadas (se suma al total, no lo reemplaza) y puede editar su callsign y su foto. No ve la ficha de nadie más, el ranking del equipo, ni puede cambiar su propio grado.
+- **Moderador**: además de su propia ficha, ve el **ranking del equipo** — el listado completo de fichas ordenado por bajas totales (de mayor a menor), con foto, callsign, rol y grado de cada persona. No puede cambiar el grado de nadie, ni siquiera el propio.
+- **Administrador**: todo lo anterior, más la posibilidad de asignarle un grado nuevo a cualquier ficha desde el ranking (un selector con los grados disponibles y un botón "Guardar" por fila), y también puede editar su propio grado con el mismo tipo de selector directamente desde "Mi Ficha", sin tener que ir al ranking.
 
-Estos permisos están validados en el backend (`Code.gs`), no solo ocultando botones en la pantalla: las acciones `listFichas` y `setGrado` rechazan el pedido si quien lo hace no tiene el rol necesario, así que aunque alguien manipulara la página no podría ver el ranking siendo miembro ni cambiar un grado sin ser administrador.
+Los grados disponibles son solo tres, ordenados de mayor a menor: **Comandante**, **Tropa** y **Recluta**.
+
+Estos permisos están validados en el backend (`Code.gs`), no solo ocultando botones en la pantalla: las acciones `listFichas` y `setGrado` rechazan el pedido si quien lo hace no tiene el rol necesario, así que aunque alguien manipulara la página no podría ver el ranking siendo miembro ni cambiar un grado sin ser administrador. El selector de grado que ve el administrador (tanto en el ranking como en su propia ficha) reutiliza esta misma acción `setGrado` — no hay un camino separado para editar el grado propio, así que la misma validación de rol aplica en los dos casos.
 
 ### Verificación
 
