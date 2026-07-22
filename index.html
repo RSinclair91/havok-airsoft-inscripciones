@@ -550,6 +550,10 @@
           <input class="input" name="editCallsign" value="{{ editCallsign }}" onChange="{{ onEditFichaFieldChange }}">
         </div>
         <div class="field">
+          <label>Nombre completo</label>
+          <input class="input" name="editNombre" value="{{ editNombre }}" onChange="{{ onEditFichaFieldChange }}">
+        </div>
+        <div class="field">
           <label>Foto</label>
           <input class="input" type="file" accept="image/*" onChange="{{ onEditFotoSelected }}">
         </div>
@@ -594,7 +598,7 @@
           </div>
           <div style="flex:1;">
             <div style="font-weight:600;">{{ row.callsign }}</div>
-            <div style="font-size:11.5px;color:var(--color-neutral-500);">{{ row.rolLabel }} · {{ row.grado }}</div>
+            <div style="font-size:11.5px;color:var(--color-neutral-500);">{{ row.nombre }} · {{ row.grado }}</div>
           </div>
           <div style="text-align:right;">
             <div style="font-family:var(--font-heading);font-weight:700;font-size:18px;">{{ row.bajasTotales }}</div>
@@ -1133,6 +1137,7 @@ class Component extends DCLogic {
     bajasError: "",
     bajasOk: false,
     editCallsign: "",
+    editNombre: "",
     editFotoBase64: "",
     editFotoError: "",
     editFichaSaving: false,
@@ -1846,6 +1851,7 @@ class Component extends DCLogic {
             ficha: data.ficha,
             fichaLoading: false,
             editCallsign: data.ficha.callsign || "",
+            editNombre: data.ficha.nombre || "",
             editFotoBase64: "",
             editFotoError: "",
             editFichaOk: false,
@@ -1920,6 +1926,7 @@ class Component extends DCLogic {
         user: this.state.fichaUser,
         pass: this.state.fichaPass,
         callsign: this.state.editCallsign,
+        nombre: this.state.editNombre,
         fotoBase64: this.state.editFotoBase64
       })
     })
@@ -2151,6 +2158,7 @@ class Component extends DCLogic {
         posicion: i + 1,
         usuario: row.usuario,
         callsign: row.callsign || row.nombre || row.usuario,
+        nombre: row.nombre || row.usuario,
         rolLabel: ROL_LABELS[row.rol] || row.rol,
         grado: pending !== undefined ? pending : row.grado,
         bajasTotales: row.bajasTotales,
@@ -2286,6 +2294,7 @@ class Component extends DCLogic {
       bajasError: this.state.bajasError,
       bajasOk: this.state.bajasOk,
       editCallsign: this.state.editCallsign,
+      editNombre: this.state.editNombre,
       onEditFichaFieldChange: this.onEditFichaFieldChange,
       onEditFotoSelected: this.onEditFotoSelected,
       onGuardarFicha: this.onGuardarFicha,
