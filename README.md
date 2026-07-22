@@ -225,6 +225,16 @@ Se corrigió la línea para que use la referencia correcta (`guardRev.auth.user`
 
 Se verificó el arreglo con una prueba temporal contra el backend real (creada y eliminada en la misma sesión, sin dejar rastros): se simuló una solicitud ya aprobada por un moderador, con su registro correspondiente en `HistorialAcciones`, y se llamó a la acción `revertirEstado` sin usar credenciales reales (se sustituyó momentáneamente la verificación de autenticación por una de prueba, sólo durante el test). Antes de la corrección esa llamada fallaba; después, revierte correctamente el estado a "Pendiente", no lanza ningún error, y queda una fila nueva en `HistorialAcciones` registrando la reversión. Se desplegó como una nueva versión del backend para que el botón funcione ya mismo en producción.
 
+### Tabla de solicitudes más ancha en pantallas de escritorio
+
+Roberto pidió que la tabla de solicitudes se viera completa en la versión de PC de escritorio, sin tener que desplazar la barra horizontal para ver las últimas columnas (Estado, Actualizado, Acción).
+
+La tabla en sí ya tenía un ancho mínimo generoso (1380px) para que cada columna tuviera espacio legible, pero el contenedor que envuelve todo el panel admin (formulario de cambio de contraseña, barra de navegación, tarjetas de resumen y la tabla) tenía un ancho máximo fijo de 1100px — mucho menor que el ancho mínimo de la tabla. Por eso, aunque la ventana del navegador fuera bien ancha, la tabla quedaba igual apretada dentro de ese contenedor angosto y aparecía la barra de scroll horizontal.
+
+Se amplió ese ancho máximo del panel de 1100px a 1500px. Al ser un `max-width` (no un ancho fijo), no afecta a pantallas más chicas: en una ventana angosta el panel simplemente ocupa el ancho disponible, igual que antes.
+
+Se verificó con pruebas automatizadas (Playwright) en varias resoluciones típicas: en 1920×1080 y en 1440×900 (las más comunes en monitores de escritorio) la tabla ahora entra completa, sin necesidad de scroll horizontal. En notebooks con pantallas más chicas (1366×768 o 1280×800) todavía aparece un scroll horizontal leve, porque a ese ancho no entran las 12 columnas con un tamaño de letra cómodo — reducir la tabla para que quepa ahí iría en contra de lo que pidió Roberto (que se vea más ancha, no más apretada).
+
 ## Filtro antispam en el formulario de inscripción (honeypot + tiempo mínimo)
 
 El formulario público de inscripción no tenía ninguna protección contra envíos automatizados (bots): cualquiera que encontrara la URL del endpoint de Apps Script (que es pública, porque está en el código fuente de la página) podía mandarle inscripciones falsas en bucle. Se agregó una protección liviana, sin dependencias externas ni fricción para la persona que se inscribe de verdad.
