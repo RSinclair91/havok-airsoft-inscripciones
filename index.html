@@ -249,7 +249,7 @@
                       <button class="btn btn-secondary" onClick="{{ row.onDeleteClick }}" style="padding:4px 10px;font-size:12px;">Borrar</button>
                     </sc-if>
                     <sc-if value="{{ row.canRevert }}" hint-placeholder-val="{{ false }}">
-                      <button class="btn btn-ghost" onClick="{{ row.onRevertirClick }}" style="padding:4px 10px;font-size:12px;" title="Revertir el último cambio de estado (disponible por 30 minutos)">{{ row.revertLabel }}</button>
+                      <button class="btn btn-ghost" onClick="{{ row.onRevertirClick }}" style="padding:4px 10px;font-size:12px;" title="Revertir al estado anterior a la última aprobación/rechazo">{{ row.revertLabel }}</button>
                     </sc-if>
                   </div>
                 </sc-if>
@@ -679,8 +679,6 @@ const CAROUSEL_IMAGES = [
   { src: "./assets/campo-equipo.jpg", alt: "Réplicas del equipo Havok Airsoft sobre neumáticos en el campo de juego" }
 ];
 
-const REVERT_WINDOW_MIN = 30;
-
 const emptyForm = () => ({
   tipo: "",
   nombre: "", dni: "", edad: "", telefono: "", email: "",
@@ -732,22 +730,17 @@ class Component extends DCLogic {
     modDeletingUser: "",
     modDeleteError: "",
     revertingId: "",
-    revertError: "",
-    nowTick: 0
+    revertError: ""
   };
 
   componentDidMount() {
     this._carouselTimer = setInterval(() => {
       this.setState(s => ({ carouselIndex: (s.carouselIndex + 1) % CAROUSEL_IMAGES.length }));
     }, 5000);
-    this._revertTickTimer = setInterval(() => {
-      this.setState(s => ({ nowTick: s.nowTick + 1 }));
-    }, 30000);
   }
 
   componentWillUnmount() {
     clearInterval(this._carouselTimer);
-    clearInterval(this._revertTickTimer);
   }
 
   goToSlide = (i) => {
@@ -1199,12 +1192,9 @@ class Component extends DCLogic {
       onDotClick: () => this.goToSlide(i)
     }));
 
-    const nowMs = Date.now();
     const inscripcionesView = this.state.inscripciones.map(row => {
       const confirmingDelete = this.state.deleteConfirmId === row.id;
       const deleting = this.state.deletingId === row.id;
-      const fechaEstadoMs = row.fechaEstadoRaw ? new Date(row.fechaEstadoRaw).getTime() : NaN;
-      const withinRevertWindow = !isNaN(fechaEstadoMs) && (nowMs - fechaEstadoMs) <= REVERT_WINDOW_MIN * 60000;
       return {
         ...row,
         confirmingDelete,
@@ -1218,7 +1208,7 @@ class Component extends DCLogic {
         canRechazar: row.estadoLabel !== "Rechazado",
         onAprobarClick: () => this.onAprobar(row.id),
         onRechazarClick: () => this.onRechazar(row.id),
-        canRevert: this.state.adminRole === "admin" && withinRevertWindow,
+        canRevert: this.state.adminRole === "admin" && row.estadoLabel !== "Pendiente",
         reverting: this.state.revertingId === row.id,
         revertLabel: this.state.revertingId === row.id ? "Revirtiendo…" : "Revertir",
         onRevertirClick: () => this.revertirEstado(row.id)
