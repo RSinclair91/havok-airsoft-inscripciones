@@ -116,6 +116,21 @@ Se hicieron dos cambios:
 
 Se probó de punta a punta contra el backend en producción: se confirmó que las credenciales viejas ya no funcionan, que las nuevas sí, que el quinto intento fallido dispara el bloqueo (con las cuatro acciones respetándolo), y que ni siquiera la contraseña correcta pasa mientras dura el bloqueo.
 
+## Filtro antispam en el formulario de inscripción (honeypot + tiempo mínimo)
+
+El formulario público de inscripción no tenía ninguna protección contra envíos automatizados (bots): cualquiera que encontrara la URL del endpoint de Apps Script (que es pública, porque está en el código fuente de la página) podía mandarle inscripciones falsas en bucle. Se agregó una protección liviana, sin dependencias externas ni fricción para la persona que se inscribe de verdad.
+
+Se combinaron dos técnicas, ambas verificadas del lado del servidor (en `Code.gs`), porque cualquier chequeo que viva solo en el navegador puede ser evitado por un bot que le pegue directo al endpoint:
+
+- **Honeypot**: se agregó un campo (`website`) que está en el formulario pero oculto fuera de la pantalla (no con `display:none`, que algunos bots detectan y evitan) y con `tabindex="-1"` para que ni siquiera sea alcanzable con el teclado. Una persona real nunca lo completa; un bot que llena todos los campos de un formulario automáticamente sí.
+- **Tiempo mínimo**: el frontend guarda el momento en que se abrió el formulario y, al enviarlo, calcula cuánto tiempo pasó (`elapsedMs`). Si el envío llega en menos de 2,5 segundos desde que se abrió el formulario (o si ese dato directamente no viene, como pasaría si un bot arma el pedido a mano sin pasar por la página), se lo trata como sospechoso — ninguna persona completa un formulario con estos campos en menos de eso.
+
+Si cualquiera de las dos condiciones se cumple, el backend responde con un **éxito falso** (`{result: "ok", codigo: ""}`) sin guardar ninguna fila en la planilla ni mandar el correo de aviso. Esto es intencional: como no hay ningún indicio de error, un bot simple no tiene forma de saber que fue descartado y no tiene motivo para insistir con otra estrategia.
+
+Limitaciones conocidas: esto frena bots genéricos y poco sofisticados, que es la inmensa mayoría del spam automatizado. No frena a alguien que mire el código fuente de la página, entienda el mecanismo y arme un pedido que imite exactamente el comportamiento real (dejando `website` vacío y mandando un `elapsedMs` alto). Para ese nivel de ataque dirigido haría falta algo más fuerte, como reCAPTCHA — se dejó afuera por ahora porque agrega fricción y una dependencia externa (Google) que no se justifican para el volumen y el perfil de este formulario.
+
+Se probó de punta a punta contra el backend en producción: un envío con el honeypot completado y uno con tiempo insuficiente (o sin `elapsedMs`) devuelven el mismo `{result:"ok"}` de siempre pero no crean ninguna fila en la planilla; un envío normal, con el honeypot vacío y un tiempo de espera realista, sigue registrándose sin problemas.
+
 ## Aviso por correo de nuevas inscripciones
 
 Cada vez que se recibe una inscripción nueva (sea "Miembro" o "Evento puntual"), el backend envía un correo de aviso a `s.c.roberto.rs@gmail.com` con el nombre, tipo, código (si es miembro), edad, experiencia y fecha. El envío usa `MailApp.sendEmail` de Apps Script y está envuelto en su propio `try/catch`: si por algún motivo el envío del correo fallara, la inscripción se guarda igual en la planilla y la respuesta al formulario no se ve afectada — el aviso por correo es un extra, no una condición para que la inscripción se registre.

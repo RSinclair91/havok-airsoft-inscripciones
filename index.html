@@ -383,6 +383,11 @@
       <sc-if value="{{ notSubmitted }}" hint-placeholder-val="{{ true }}">
       <form onSubmit="{{ onSubmit }}" class="card elev-md" style="padding:var(--space-8);gap:var(--space-6);">
 
+        <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
+          <label>Dejar en blanco</label>
+          <input type="text" name="website" value="{{ form.website }}" onChange="{{ onFieldChange }}" tabindex="-1" autocomplete="off">
+        </div>
+
         <div class="field">
           <label>Tipo de inscripción</label>
           <p style="color:var(--color-neutral-400);font-size:12.5px;margin:2px 0 var(--space-3);">Elegí una opción antes de continuar. Este dato no se puede cambiar después de enviar el formulario.</p>
@@ -567,10 +572,13 @@ const emptyForm = () => ({
   experiencia: "",
   equipoReplica: false, equipoProteccion: false, equipoNinguno: false,
   autNombre: "", autDni: "", autAceptado: false,
-  reglamentoAceptado: false
+  reglamentoAceptado: false,
+  website: ""
 });
 
 class Component extends DCLogic {
+  formOpenedAt = Date.now();
+
   state = {
     page: "landing",
     form: emptyForm(),
@@ -634,7 +642,9 @@ class Component extends DCLogic {
         emRelacion: f.emRelacion,
         autNombre: f.autNombre,
         autDni: f.autDni,
-        autAceptado: f.autAceptado
+        autAceptado: f.autAceptado,
+        website: f.website,
+        elapsedMs: Date.now() - this.formOpenedAt
       })
     })
       .then(res => res.json())
@@ -674,6 +684,7 @@ class Component extends DCLogic {
   };
 
   resetForm = () => {
+    this.formOpenedAt = Date.now();
     this.setState({ submitted: false, form: emptyForm(), codigoGenerado: "" });
   };
 
