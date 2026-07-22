@@ -1354,7 +1354,8 @@ class Component extends DCLogic {
             } : r)
           }));
         } else {
-          this.setState({ estadoUpdatingId: "", estadoError: "No se pudo actualizar el estado." });
+          this.setState({ estadoUpdatingId: "", estadoError: data.message || "No se pudo actualizar el estado." });
+          this.loadInscripciones(user, pass);
         }
       })
       .catch(() => {
@@ -1436,8 +1437,8 @@ class Component extends DCLogic {
         onDeleteConfirm: () => this.onDeleteConfirm(row.id),
         onDeleteCancel: this.onDeleteCancel,
         canDelete: this.state.adminRole === "admin",
-        canAprobar: row.estadoLabel !== "Aprobado",
-        canRechazar: row.estadoLabel !== "Rechazado",
+        canAprobar: (this.state.adminRole === "admin" || row.estadoLabel === "Pendiente") && row.estadoLabel !== "Aprobado",
+        canRechazar: (this.state.adminRole === "admin" || row.estadoLabel === "Pendiente") && row.estadoLabel !== "Rechazado",
         onAprobarClick: () => this.onAprobar(row.id),
         onRechazarClick: () => this.onRechazar(row.id),
         canRevert: this.state.adminRole === "admin" && row.estadoLabel !== "Pendiente",
