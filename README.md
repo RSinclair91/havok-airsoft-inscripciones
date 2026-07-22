@@ -157,6 +157,14 @@ Todo esto llama al mismo endpoint de Apps Script (`createModerator`, `deleteMode
 
 Se probó de punta a punta contra el backend en producción: cambio de credenciales del administrador (ida y vuelta, confirmando que las viejas dejan de funcionar y las nuevas sí, y que la restauración a las credenciales reales funcionó igual), creación de un moderador de prueba, login de ese moderador con `role: "moderador"`, rechazo de las cinco acciones reservadas al administrador al intentarlas como moderador, y eliminación del moderador de prueba al final (sin dejar ningún dato de prueba en la planilla ni en las Script Properties).
 
+### Cambio de contraseña obligatorio en el primer ingreso de un moderador
+
+Cuando el administrador crea un moderador, le da él mismo una contraseña por defecto (la que eligió al completar el formulario "Crear moderador"). Para que esa contraseña provisoria no quede en uso indefinidamente, cada moderador nuevo se marca internamente con una bandera `mustChangePassword`, y la primera vez que ese moderador inicia sesión, el panel lo bloquea con una pantalla de "Cambio de contraseña obligatorio": no puede ver las solicitudes ni hacer nada más hasta que elija una contraseña nueva (de al menos 8 caracteres, confirmada dos veces). Recién ahí se le libera el resto del panel, sin necesidad de volver a loguearse — sigue en la misma sesión, ya con la contraseña nueva.
+
+Esto se resolvió agregando la bandera al registro del moderador (se guarda encriptada como el resto de sus datos, nunca en texto plano), propagándola en la respuesta del login (`adminLogin`) y agregando una acción nueva, `changeModeratorPassword`, que solo un moderador logueado puede usar sobre su propia cuenta para fijar la contraseña definitiva y apagar la bandera. El administrador (nivel 1) nunca pasa por esta pantalla, porque su propio cambio de contraseña ya se resuelve con el panel "Mis credenciales" descripto más arriba.
+
+Se probó localmente con Playwright (login simulado con la bandera en distintos estados: moderador nuevo bloqueado, intento de contraseña demasiado corta rechazado, cambio exitoso que libera el panel en la misma sesión, y moderador ya "graduado" que entra directo sin ver la pantalla de bloqueo) y contra el backend real mediante una función de prueba temporal en el editor de Apps Script (creada y borrada en la misma verificación, sin dejar rastros en las Script Properties): confirma que la contraseña por defecto deja de funcionar apenas se cambia, que la nueva sí funciona, y que `mustChangePassword` pasa a `false` tanto en un login posterior como en la respuesta inmediata del cambio.
+
 ### Registro de moderadores en la planilla, y reversión de aprobaciones/rechazos
 
 Roberto pidió, además, poder ver un registro de los moderadores directamente en la planilla de Google Sheets (no solo en el panel), y poder revertir una aprobación o rechazo si un moderador (o el propio administrador) se equivoca.

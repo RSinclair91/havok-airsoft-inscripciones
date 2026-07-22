@@ -141,6 +141,32 @@
 <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
   <sc-if value="{{ adminLoggedIn }}" hint-placeholder-val="{{ false }}">
   <div style="max-width:1100px;margin:0 auto;padding:var(--space-8) var(--space-6) 80px;">
+
+    <sc-if value="{{ mustChangePassword }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:420px;margin:60px auto;">
+      <div class="card elev-md" style="padding:var(--space-8);gap:var(--space-4);">
+        <div class="card-kicker">Cambio de contraseña obligatorio</div>
+        <p class="text-muted" style="font-size:13px;margin:0;">Por seguridad, antes de continuar tenés que elegir una contraseña nueva (la actual es la que te asignó el administrador).</p>
+        <form onSubmit="{{ onChangeModPassword }}" style="display:flex;flex-direction:column;gap:var(--space-3);">
+          <div class="field">
+            <label>Nueva contraseña</label>
+            <input class="input" type="password" name="modPassNew" value="{{ modPassNew }}" onChange="{{ onModPassFieldChange }}" required="{{ true }}">
+          </div>
+          <div class="field">
+            <label>Confirmar contraseña</label>
+            <input class="input" type="password" name="modPassNew2" value="{{ modPassNew2 }}" onChange="{{ onModPassFieldChange }}" required="{{ true }}">
+          </div>
+          <sc-if value="{{ modPassError }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ modPassError }}</div>
+          </sc-if>
+          <button type="submit" class="btn btn-primary" disabled="{{ modPassSaving }}">Guardar y continuar</button>
+        </form>
+        <button class="btn btn-secondary" onClick="{{ adminLogout }}" style="margin-top:var(--space-2);">Cerrar sesión</button>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ notMustChangePassword }}" hint-placeholder-val="{{ true }}">
     <div class="nav" style="padding-left:0;padding-right:0;margin-bottom:var(--space-8);">
       <div class="nav-brand">Panel admin — Havok</div>
       <sc-if value="{{ isAdminRole }}" hint-placeholder-val="{{ true }}">
@@ -333,6 +359,7 @@
         </form>
       </div>
     </div>
+    </sc-if>
     </sc-if>
   </div>
   </sc-if>
@@ -730,7 +757,12 @@ class Component extends DCLogic {
     modDeletingUser: "",
     modDeleteError: "",
     revertingId: "",
-    revertError: ""
+    revertError: "",
+    mustChangePassword: false,
+    modPassNew: "",
+    modPassNew2: "",
+    modPassSaving: false,
+    modPassError: ""
   };
 
   componentDidMount() {
@@ -858,7 +890,15 @@ class Component extends DCLogic {
       .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
-          this.setState({ adminLoggedIn: true, adminRole: data.role || "admin", adminError: "" });
+          this.setState({
+            adminLoggedIn: true,
+            adminRole: data.role || "admin",
+            adminError: "",
+            mustChangePassword: !!data.mustChangePassword,
+            modPassNew: "",
+            modPassNew2: "",
+            modPassError: ""
+          });
           this.loadInscripciones(user, pass);
         } else {
           this.setState({ adminError: "Usuario o contraseña incorrectos." });
@@ -914,7 +954,8 @@ class Component extends DCLogic {
   adminLogout = () => {
     this.setState({
       adminLoggedIn: false, adminUser: "", adminPass: "", adminRole: "", adminView: "solicitudes",
-      page: "landing", inscripciones: [], moderadores: []
+      page: "landing", inscripciones: [], moderadores: [],
+      mustChangePassword: false, modPassNew: "", modPassNew2: "", modPassError: ""
     });
   };
 
@@ -994,6 +1035,54 @@ class Component extends DCLogic {
       })
       .catch(() => {
         this.setState({ credSaving: false, credError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onModPassFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, modPassError: "" });
+  };
+
+  onChangeModPassword = (e) => {
+    e.preventDefault();
+    const { modPassNew, modPassNew2 } = this.state;
+    if (!modPassNew || modPassNew.length < 8) {
+      this.setState({ modPassError: "La contraseña debe tener al menos 8 caracteres." });
+      return;
+    }
+    if (modPassNew !== modPassNew2) {
+      this.setState({ modPassError: "Las contraseñas no coinciden." });
+      return;
+    }
+    this.setState({ modPassSaving: true, modPassError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "changeModeratorPassword",
+        user: this.state.adminUser,
+        pass: this.state.adminPass,
+        newPass: modPassNew
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            modPassSaving: false,
+            mustChangePassword: false,
+            adminPass: modPassNew,
+            modPassNew: "",
+            modPassNew2: "",
+            modPassError: ""
+          });
+        } else {
+          this.setState({ modPassSaving: false, modPassError: data.message || "No se pudo actualizar la contraseña." });
+        }
+      })
+      .catch(() => {
+        this.setState({ modPassSaving: false, modPassError: "No se pudo conectar con el servidor." });
       });
   };
 
@@ -1231,6 +1320,14 @@ class Component extends DCLogic {
       onAdminLogin: this.onAdminLogin,
       adminLogout: this.adminLogout,
       isAdminRole: this.state.adminRole === "admin",
+      mustChangePassword: this.state.mustChangePassword,
+      notMustChangePassword: !this.state.mustChangePassword,
+      modPassNew: this.state.modPassNew,
+      modPassNew2: this.state.modPassNew2,
+      onModPassFieldChange: this.onModPassFieldChange,
+      onChangeModPassword: this.onChangeModPassword,
+      modPassSaving: this.state.modPassSaving,
+      modPassError: this.state.modPassError,
       isSolicitudesView: this.state.adminView !== "usuarios",
       isUsuariosView: this.state.adminView === "usuarios",
       goToUsuarios: this.goToUsuarios,
