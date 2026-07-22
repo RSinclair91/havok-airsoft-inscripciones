@@ -150,11 +150,11 @@
         <form onSubmit="{{ onChangeModPassword }}" style="display:flex;flex-direction:column;gap:var(--space-3);">
           <div class="field">
             <label>Nueva contraseña</label>
-            <input class="input" type="password" name="modPassNew" value="{{ modPassNew }}" onChange="{{ onModPassFieldChange }}" required="{{ true }}">
+            <input class="input" type="password" name="modPassNew" value="{{ modPassNew }}" onChange="{{ onModPassFieldChange }}" required="{{ true }}" autocomplete="new-password">
           </div>
           <div class="field">
             <label>Confirmar contraseña</label>
-            <input class="input" type="password" name="modPassNew2" value="{{ modPassNew2 }}" onChange="{{ onModPassFieldChange }}" required="{{ true }}">
+            <input class="input" type="password" name="modPassNew2" value="{{ modPassNew2 }}" onChange="{{ onModPassFieldChange }}" required="{{ true }}" autocomplete="new-password">
           </div>
           <sc-if value="{{ modPassError }}" hint-placeholder-val="{{ false }}">
             <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ modPassError }}</div>
@@ -296,15 +296,15 @@
         <form onSubmit="{{ onChangeCredentials }}" style="display:flex;flex-direction:column;gap:var(--space-3);">
           <div class="field">
             <label>Nuevo usuario</label>
-            <input class="input" name="credNewUser" value="{{ credNewUser }}" onChange="{{ onCredFieldChange }}" required="{{ true }}">
+            <input class="input" name="credNewUser" value="{{ credNewUser }}" onChange="{{ onCredFieldChange }}" required="{{ true }}" autocomplete="off">
           </div>
           <div class="field">
             <label>Nueva contraseña</label>
-            <input class="input" type="password" name="credNewPass" value="{{ credNewPass }}" onChange="{{ onCredFieldChange }}" required="{{ true }}">
+            <input class="input" type="password" name="credNewPass" value="{{ credNewPass }}" onChange="{{ onCredFieldChange }}" required="{{ true }}" autocomplete="new-password">
           </div>
           <div class="field">
             <label>Confirmar contraseña</label>
-            <input class="input" type="password" name="credNewPass2" value="{{ credNewPass2 }}" onChange="{{ onCredFieldChange }}" required="{{ true }}">
+            <input class="input" type="password" name="credNewPass2" value="{{ credNewPass2 }}" onChange="{{ onCredFieldChange }}" required="{{ true }}" autocomplete="new-password">
           </div>
           <sc-if value="{{ credError }}" hint-placeholder-val="{{ false }}">
             <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ credError }}</div>
@@ -346,11 +346,11 @@
         <form onSubmit="{{ onCreateModerator }}" style="display:flex;flex-direction:column;gap:var(--space-3);border-top:1px solid var(--color-divider);padding-top:var(--space-4);">
           <div class="field">
             <label>Nuevo usuario moderador</label>
-            <input class="input" name="newModUser" value="{{ newModUser }}" onChange="{{ onNewModFieldChange }}" required="{{ true }}">
+            <input class="input" name="newModUser" value="{{ newModUser }}" onChange="{{ onNewModFieldChange }}" required="{{ true }}" autocomplete="off">
           </div>
           <div class="field">
             <label>Contraseña</label>
-            <input class="input" type="password" name="newModPass" value="{{ newModPass }}" onChange="{{ onNewModFieldChange }}" required="{{ true }}">
+            <input class="input" type="password" name="newModPass" value="{{ newModPass }}" onChange="{{ onNewModFieldChange }}" required="{{ true }}" autocomplete="new-password">
           </div>
           <sc-if value="{{ modCreateError }}" hint-placeholder-val="{{ false }}">
             <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ modCreateError }}</div>
@@ -376,11 +376,11 @@
       <form onSubmit="{{ onAdminLogin }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
         <div class="field">
           <label>Usuario</label>
-          <input class="input" name="adminUser" value="{{ adminUser }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}">
+          <input class="input" name="adminUser" value="{{ adminUser }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}" autocomplete="username">
         </div>
         <div class="field">
           <label>Contraseña</label>
-          <input class="input" type="password" name="adminPass" value="{{ adminPass }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}">
+          <input class="input" type="password" name="adminPass" value="{{ adminPass }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}" autocomplete="current-password">
         </div>
         <sc-if value="{{ adminError }}" hint-placeholder-val="{{ false }}">
           <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ adminError }}</div>
@@ -412,15 +412,15 @@
         <p class="text-muted" style="font-size:12.5px;margin:0;">Revisá el email y pegá el código junto con tu contraseña nueva.</p>
         <div class="field">
           <label>Código recibido por email</label>
-          <input class="input" name="resetCode" value="{{ resetCode }}" onChange="{{ onResetFieldChange }}" required="{{ true }}">
+          <input class="input" name="resetCode" value="{{ resetCode }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="one-time-code">
         </div>
         <div class="field">
           <label>Contraseña nueva</label>
-          <input class="input" type="password" name="resetNewPass" value="{{ resetNewPass }}" onChange="{{ onResetFieldChange }}" required="{{ true }}">
+          <input class="input" type="password" name="resetNewPass" value="{{ resetNewPass }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="new-password">
         </div>
         <div class="field">
           <label>Confirmar contraseña</label>
-          <input class="input" type="password" name="resetNewPass2" value="{{ resetNewPass2 }}" onChange="{{ onResetFieldChange }}" required="{{ true }}">
+          <input class="input" type="password" name="resetNewPass2" value="{{ resetNewPass2 }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="new-password">
         </div>
         <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
           <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ resetError }}</div>
@@ -1113,6 +1113,14 @@ class Component extends DCLogic {
       .then(data => {
         if (data.result === "ok") {
           this.setState({ moderadores: data.moderadores || [], moderadoresLoading: false });
+        } else if (data.message === "No autorizado") {
+          this.setState({
+            adminLoggedIn: false, adminUser: "", adminPass: "", adminRole: "", adminView: "solicitudes",
+            page: "admin", inscripciones: [], moderadores: [],
+            mustChangePassword: false, modPassNew: "", modPassNew2: "", modPassError: "",
+            moderadoresLoading: false, moderadoresError: "",
+            adminError: "Tu sesión ya no es válida. Iniciá sesión de nuevo."
+          });
         } else {
           this.setState({ moderadoresLoading: false, moderadoresError: data.message || "No se pudieron cargar los usuarios." });
         }
