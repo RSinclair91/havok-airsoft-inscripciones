@@ -133,6 +133,26 @@
     content: "✓ Seleccionado"; font-size: 11px; font-weight: 700;
     letter-spacing: .03em; color: var(--color-bg); margin-top: 2px;
   }
+
+  /* Ficha de usuario */
+  .havok-ficha-avatar {
+    width: 132px; height: 132px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+    border: 3px solid var(--color-accent); box-shadow: var(--shadow-md);
+    background: var(--color-surface); display: flex; align-items: center; justify-content: center;
+  }
+  .havok-ficha-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .havok-ficha-avatar-placeholder { font-size: 42px; color: var(--color-neutral-500); }
+  .havok-ficha-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); }
+  .havok-ficha-stat { text-align: center; padding: var(--space-4); }
+  .havok-ficha-stat .valor { font-family: var(--font-heading); font-size: 26px; font-weight: 700; color: var(--color-accent-300); }
+  .havok-ficha-stat .etiqueta { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--color-neutral-500); margin-top: 2px; }
+  .havok-ranking-row { display: flex; align-items: center; gap: var(--space-3); padding: 10px 0; border-bottom: 1px solid var(--color-divider); }
+  .havok-ranking-pos { font-family: var(--font-heading); font-weight: 700; width: 28px; text-align: center; color: var(--color-neutral-500); }
+  .havok-ranking-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; flex-shrink: 0; border: 2px solid var(--color-accent-700); background: var(--color-surface); display: flex; align-items: center; justify-content: center; }
+  .havok-ranking-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  @media (max-width: 720px) {
+    .havok-ficha-header { flex-direction: column; text-align: center; }
+  }
 </style>
 </helmet>
 
@@ -437,6 +457,231 @@
   </sc-if>
 </sc-if>
 
+<sc-if value="{{ isFichas }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1100px;margin:0 auto;padding:var(--space-8) var(--space-6) 100px;">
+
+  <sc-if value="{{ fichaLoggedIn }}" hint-placeholder-val="{{ false }}">
+  <div class="nav" style="padding-left:0;padding-right:0;margin-bottom:var(--space-8);">
+    <div class="nav-brand">Fichas — Havok</div>
+    <button class="btn btn-secondary" onClick="{{ goToMiFicha }}">Mi ficha</button>
+    <sc-if value="{{ fichaCanVerRanking }}" hint-placeholder-val="{{ false }}">
+      <button class="btn btn-secondary" onClick="{{ goToRanking }}">Ranking del equipo</button>
+    </sc-if>
+    <button class="btn btn-secondary" onClick="{{ fichaLogout }}">Cerrar sesión</button>
+    <button class="btn btn-secondary" onClick="{{ goToLanding }}">← Volver al sitio</button>
+  </div>
+
+  <sc-if value="{{ fichaViewMi }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ fichaLoading }}" hint-placeholder-val="{{ false }}">
+      <div class="text-muted">Cargando tu ficha...</div>
+    </sc-if>
+    <sc-if value="{{ fichaLoadError }}" hint-placeholder-val="{{ false }}">
+      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-4);">{{ fichaLoadError }}</div>
+    </sc-if>
+
+    <sc-if value="{{ hasFicha }}" hint-placeholder-val="{{ false }}">
+    <div class="card elev-md havok-ficha-header" style="flex-direction:row;align-items:center;gap:var(--space-6);padding:var(--space-8);margin-bottom:var(--space-6);">
+      <div class="havok-ficha-avatar">
+        <sc-if value="{{ ficha.tieneFoto }}" hint-placeholder-val="{{ false }}">
+          <img src="{{ ficha.fotoBase64 }}" alt="Foto de {{ ficha.callsign }}">
+        </sc-if>
+        <sc-if value="{{ ficha.sinFoto }}" hint-placeholder-val="{{ true }}">
+          <span class="havok-ficha-avatar-placeholder">?</span>
+        </sc-if>
+      </div>
+      <div>
+        <div class="card-kicker">{{ ficha.rolLabel }}</div>
+        <h2 style="margin:var(--space-1) 0;">{{ ficha.callsign }}</h2>
+        <div class="text-muted" style="font-size:13px;">{{ ficha.nombre }} · Grado: {{ ficha.grado }}</div>
+      </div>
+    </div>
+
+    <div class="card elev-sm havok-ficha-stats" style="margin-bottom:var(--space-6);">
+      <div class="havok-ficha-stat">
+        <div class="valor">{{ ficha.bajasTotales }}</div>
+        <div class="etiqueta">Bajas totales</div>
+      </div>
+      <div class="havok-ficha-stat">
+        <div class="valor">{{ ficha.grado }}</div>
+        <div class="etiqueta">Grado</div>
+      </div>
+      <div class="havok-ficha-stat">
+        <div class="valor">{{ ficha.fechaCreadoLabel }}</div>
+        <div class="etiqueta">Miembro desde</div>
+      </div>
+    </div>
+
+    <div class="card elev-sm" style="margin-bottom:var(--space-6);gap:var(--space-4);">
+      <div class="card-kicker">Cargar bajas de hoy</div>
+      <p class="text-muted" style="font-size:12.5px;margin:0;">Ingresá la cantidad de bajas causadas en la partida de hoy. Se suma al total acumulado.</p>
+      <form onSubmit="{{ onSumarBajas }}" style="display:flex;gap:var(--space-3);align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="max-width:160px;">
+          <label>Bajas de hoy</label>
+          <input class="input" type="number" min="1" max="999" name="bajasHoy" value="{{ bajasHoy }}" onChange="{{ onBajasHoyChange }}" required="{{ true }}">
+        </div>
+        <button type="submit" class="btn btn-primary" disabled="{{ bajasSaving }}">Sumar al total</button>
+      </form>
+      <sc-if value="{{ bajasError }}" hint-placeholder-val="{{ false }}">
+        <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ bajasError }}</div>
+      </sc-if>
+      <sc-if value="{{ bajasOk }}" hint-placeholder-val="{{ false }}">
+        <div class="tag tag-accent">Bajas sumadas correctamente.</div>
+      </sc-if>
+    </div>
+
+    <div class="card elev-sm" style="gap:var(--space-4);">
+      <div class="card-kicker">Editar ficha</div>
+      <form onSubmit="{{ onGuardarFicha }}" style="display:flex;flex-direction:column;gap:var(--space-3);">
+        <div class="field">
+          <label>Callsign</label>
+          <input class="input" name="editCallsign" value="{{ editCallsign }}" onChange="{{ onEditFichaFieldChange }}">
+        </div>
+        <div class="field">
+          <label>Foto</label>
+          <input class="input" type="file" accept="image/*" onChange="{{ onEditFotoSelected }}">
+        </div>
+        <sc-if value="{{ editFotoError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ editFotoError }}</div>
+        </sc-if>
+        <sc-if value="{{ editFichaError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ editFichaError }}</div>
+        </sc-if>
+        <sc-if value="{{ editFichaOk }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-accent">Ficha actualizada.</div>
+        </sc-if>
+        <button type="submit" class="btn btn-secondary" disabled="{{ editFichaSaving }}" style="align-self:flex-start;">Guardar cambios</button>
+      </form>
+    </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ fichaViewRanking }}" hint-placeholder-val="{{ false }}">
+    <div class="card-kicker" style="margin-bottom:var(--space-2);">Ranking del equipo</div>
+    <h2 style="margin:0 0 var(--space-6);">Fichas de la unidad</h2>
+    <sc-if value="{{ rankingLoading }}" hint-placeholder-val="{{ false }}">
+      <div class="text-muted">Cargando fichas...</div>
+    </sc-if>
+    <sc-if value="{{ rankingError }}" hint-placeholder-val="{{ false }}">
+      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ rankingError }}</div>
+    </sc-if>
+    <sc-if value="{{ gradoError }}" hint-placeholder-val="{{ false }}">
+      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-3);">{{ gradoError }}</div>
+    </sc-if>
+    <div class="card elev-sm" style="padding:var(--space-4);">
+      <sc-for list="{{ rankingView }}" as="row" hint-placeholder-count="3">
+        <div class="havok-ranking-row">
+          <div class="havok-ranking-pos">{{ row.posicion }}</div>
+          <div class="havok-ranking-avatar">
+            <sc-if value="{{ row.tieneFoto }}" hint-placeholder-val="{{ false }}">
+              <img src="{{ row.fotoBase64 }}" alt="{{ row.callsign }}">
+            </sc-if>
+            <sc-if value="{{ row.sinFoto }}" hint-placeholder-val="{{ true }}">
+              <span class="havok-ficha-avatar-placeholder" style="font-size:16px;">?</span>
+            </sc-if>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:600;">{{ row.callsign }}</div>
+            <div style="font-size:11.5px;color:var(--color-neutral-500);">{{ row.rolLabel }} · {{ row.grado }}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:var(--font-heading);font-weight:700;font-size:18px;">{{ row.bajasTotales }}</div>
+            <div style="font-size:10.5px;color:var(--color-neutral-500);">bajas</div>
+          </div>
+          <sc-if value="{{ row.canEditGrado }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:6px;align-items:center;margin-left:var(--space-3);">
+              <select class="input" style="padding:4px 8px;font-size:12px;" onChange="{{ row.onGradoSelectChange }}">
+                <sc-for list="{{ gradosOpciones }}" as="g" hint-placeholder-count="5">
+                  <option value="{{ g }}" selected="{{ g === row.grado }}">{{ g }}</option>
+                </sc-for>
+              </select>
+              <button class="btn btn-secondary" style="padding:4px 8px;font-size:11.5px;" onClick="{{ row.onGuardarGradoClick }}" disabled="{{ row.savingGrado }}">Guardar</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ notFichaLoggedIn }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:420px;margin:60px auto;">
+    <div class="card elev-md" style="padding:var(--space-8);gap:var(--space-4);">
+
+      <sc-if value="{{ notFichaRegisterMode }}" hint-placeholder-val="{{ true }}">
+        <div style="text-align:center;margin-bottom:var(--space-2);">
+          <div class="nav-brand" style="margin-right:0;">Mi Ficha — Havok</div>
+          <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Ingresá con tu usuario para ver tu ficha personal.</p>
+        </div>
+        <form onSubmit="{{ onFichaLogin }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+          <div class="field">
+            <label>Usuario</label>
+            <input class="input" name="fichaUser" value="{{ fichaUser }}" onChange="{{ onFichaFieldChange }}" required="{{ true }}" autocomplete="username">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input class="input" type="password" name="fichaPass" value="{{ fichaPass }}" onChange="{{ onFichaFieldChange }}" required="{{ true }}" autocomplete="current-password">
+          </div>
+          <sc-if value="{{ fichaLoginError }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ fichaLoginError }}</div>
+          </sc-if>
+          <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+          <button type="button" class="btn btn-ghost" onClick="{{ onGoToRegisterMode }}" style="align-self:center;font-size:12.5px;">¿Sos miembro aprobado y todavía no creaste tu usuario?</button>
+          <button type="button" class="btn btn-ghost" onClick="{{ goToLanding }}" style="align-self:center;">Volver al sitio</button>
+        </form>
+      </sc-if>
+
+      <sc-if value="{{ fichaRegisterMode }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;margin-bottom:var(--space-2);">
+          <div class="nav-brand" style="margin-right:0;">Crear mi usuario</div>
+          <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Solo para miembros ya aprobados. Necesitás el DNI y el código que recibiste al inscribirte.</p>
+        </div>
+        <form onSubmit="{{ onRegSubmit }}" style="display:flex;flex-direction:column;gap:var(--space-3);">
+          <div class="field">
+            <label>DNI</label>
+            <input class="input" name="regDni" value="{{ regDni }}" onChange="{{ onRegFieldChange }}" required="{{ true }}">
+          </div>
+          <div class="field">
+            <label>Código de inscripción</label>
+            <input class="input" name="regCodigo" value="{{ regCodigo }}" onChange="{{ onRegFieldChange }}" required="{{ true }}">
+          </div>
+          <div class="field">
+            <label>Callsign (nombre de guerra, opcional)</label>
+            <input class="input" name="regCallsign" value="{{ regCallsign }}" onChange="{{ onRegFieldChange }}">
+          </div>
+          <div class="field">
+            <label>Usuario</label>
+            <input class="input" name="regUsuario" value="{{ regUsuario }}" onChange="{{ onRegFieldChange }}" required="{{ true }}" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input class="input" type="password" name="regPass" value="{{ regPass }}" onChange="{{ onRegFieldChange }}" required="{{ true }}" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>Confirmar contraseña</label>
+            <input class="input" type="password" name="regPass2" value="{{ regPass2 }}" onChange="{{ onRegFieldChange }}" required="{{ true }}" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>Foto (para tu ficha)</label>
+            <input class="input" type="file" accept="image/*" onChange="{{ onRegFotoSelected }}" required="{{ true }}">
+          </div>
+          <sc-if value="{{ regFotoError }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ regFotoError }}</div>
+          </sc-if>
+          <sc-if value="{{ regError }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ regError }}</div>
+          </sc-if>
+          <button type="submit" class="btn btn-primary btn-block" disabled="{{ regSaving }}">Crear usuario</button>
+          <button type="button" class="btn btn-ghost" onClick="{{ onBackToFichaLogin }}" style="align-self:center;">Ya tengo usuario, volver al login</button>
+        </form>
+      </sc-if>
+
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</sc-if>
+
 <sc-if value="{{ isReglamento }}" hint-placeholder-val="{{ false }}">
   <div style="max-width:760px;margin:0 auto;padding:var(--space-8) var(--space-6) 100px;">
     <div class="nav" style="padding-left:0;padding-right:0;margin-bottom:var(--space-6);">
@@ -482,6 +727,7 @@
     <a href="#nosotros">Nosotros</a>
     <a href="#reglamento" onClick="{{ goToReglamento }}">Reglamento</a>
     <a href="#inscripcion" class="btn btn-primary">Inscribite</a>
+    <button class="btn btn-secondary" onClick="{{ goToFichas }}">Mi Ficha</button>
     <button class="btn btn-secondary" onClick="{{ goToAdmin }}">Admin</button>
   </header>
 
@@ -763,6 +1009,40 @@ const emptyForm = () => ({
   website: ""
 });
 
+const ROL_LABELS = { admin: "Admin", moderador: "Moderador", miembro: "Miembro" };
+const GRADOS_DISPONIBLES = ["Recluta", "Soldado", "Cabo", "Sargento", "Teniente", "Capitán", "Comandante"];
+
+function resizeImageFile(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    if (!file) { reject(new Error("No se seleccionó ningún archivo.")); return; }
+    if (!file.type || file.type.indexOf("image/") !== 0) { reject(new Error("El archivo debe ser una imagen.")); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("No se pudo leer la imagen."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("No se pudo procesar la imagen."));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        const max = maxSize || 300;
+        if (w >= h && w > max) { h = Math.round(h * (max / w)); w = max; }
+        else if (h > w && h > max) { w = Math.round(w * (max / h)); h = max; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        try {
+          resolve(canvas.toDataURL("image/jpeg", quality || 0.62));
+        } catch (err) {
+          reject(new Error("No se pudo convertir la imagen."));
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 class Component extends DCLogic {
   formOpenedAt = Date.now();
 
@@ -816,7 +1096,44 @@ class Component extends DCLogic {
     resetCode: "",
     resetNewPass: "",
     resetNewPass2: "",
-    resetError: ""
+    resetError: "",
+
+    fichaLoggedIn: false,
+    fichaUser: "",
+    fichaPass: "",
+    fichaRole: "",
+    fichaLoginError: "",
+    fichaView: "mi",
+    fichaRegisterMode: false,
+    ficha: null,
+    fichaLoading: false,
+    fichaLoadError: "",
+    bajasHoy: "",
+    bajasSaving: false,
+    bajasError: "",
+    bajasOk: false,
+    editCallsign: "",
+    editFotoBase64: "",
+    editFotoError: "",
+    editFichaSaving: false,
+    editFichaError: "",
+    editFichaOk: false,
+    rankingList: [],
+    rankingLoading: false,
+    rankingError: "",
+    gradoEdits: {},
+    gradoSavingUser: "",
+    gradoError: "",
+    regDni: "",
+    regCodigo: "",
+    regUsuario: "",
+    regPass: "",
+    regPass2: "",
+    regCallsign: "",
+    regFotoBase64: "",
+    regFotoError: "",
+    regSaving: false,
+    regError: ""
   };
 
   componentDidMount() {
@@ -1400,6 +1717,311 @@ class Component extends DCLogic {
       });
   };
 
+  goToFichas = () => {
+    this.setState({ page: "fichas" });
+    if (this.state.fichaLoggedIn) {
+      this.goToMiFicha();
+    }
+  };
+
+  onFichaFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, fichaLoginError: "" });
+  };
+
+  onFichaLogin = (e) => {
+    e.preventDefault();
+    const user = this.state.fichaUser;
+    const pass = this.state.fichaPass;
+    this.setState({ fichaLoginError: "Verificando..." });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "fichaLogin", user, pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            fichaLoggedIn: true,
+            fichaRole: data.role || "miembro",
+            fichaLoginError: "",
+            fichaView: "mi"
+          });
+          this.loadMiFicha();
+        } else {
+          this.setState({ fichaLoginError: (data && data.message) || "Usuario o contraseña incorrectos." });
+        }
+      })
+      .catch(() => {
+        this.setState({ fichaLoginError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  fichaLogout = () => {
+    this.setState({
+      fichaLoggedIn: false, fichaUser: "", fichaPass: "", fichaRole: "",
+      fichaLoginError: "", fichaView: "mi", fichaRegisterMode: false,
+      ficha: null, rankingList: [], gradoEdits: {}
+    });
+  };
+
+  goToMiFicha = () => {
+    this.setState({ fichaView: "mi" });
+    this.loadMiFicha();
+  };
+
+  goToRanking = () => {
+    this.setState({ fichaView: "ranking" });
+    this.loadRanking();
+  };
+
+  loadMiFicha = () => {
+    this.setState({ fichaLoading: true, fichaLoadError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "getMiFicha", user: this.state.fichaUser, pass: this.state.fichaPass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok" && data.ficha) {
+          this.setState({
+            ficha: data.ficha,
+            fichaLoading: false,
+            editCallsign: data.ficha.callsign || "",
+            editFotoBase64: "",
+            editFotoError: "",
+            editFichaOk: false
+          });
+        } else {
+          this.setState({ fichaLoading: false, fichaLoadError: (data && data.message) || "No se pudo cargar tu ficha." });
+        }
+      })
+      .catch(() => {
+        this.setState({ fichaLoading: false, fichaLoadError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onBajasHoyChange = (e) => {
+    this.setState({ bajasHoy: e.target.value, bajasError: "", bajasOk: false });
+  };
+
+  onSumarBajas = (e) => {
+    e.preventDefault();
+    const cantidad = Number(this.state.bajasHoy);
+    if (!isFinite(cantidad) || cantidad <= 0 || cantidad > 999 || Math.floor(cantidad) !== cantidad) {
+      this.setState({ bajasError: "Ingresá un número entero entre 1 y 999." });
+      return;
+    }
+    this.setState({ bajasSaving: true, bajasError: "", bajasOk: false });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "sumarBajas", user: this.state.fichaUser, pass: this.state.fichaPass, cantidad })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState(s => ({
+            bajasSaving: false, bajasOk: true, bajasHoy: "",
+            ficha: s.ficha ? { ...s.ficha, bajasTotales: data.bajasTotales } : s.ficha
+          }));
+        } else {
+          this.setState({ bajasSaving: false, bajasError: (data && data.message) || "No se pudieron sumar las bajas." });
+        }
+      })
+      .catch(() => {
+        this.setState({ bajasSaving: false, bajasError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onEditFichaFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, editFichaError: "", editFichaOk: false });
+  };
+
+  onEditFotoSelected = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    this.setState({ editFotoError: "" });
+    resizeImageFile(file, 300, 0.62)
+      .then(dataUrl => this.setState({ editFotoBase64: dataUrl, editFotoError: "" }))
+      .catch(err => this.setState({ editFotoError: err.message || "No se pudo procesar la foto." }));
+  };
+
+  onGuardarFicha = (e) => {
+    e.preventDefault();
+    this.setState({ editFichaSaving: true, editFichaError: "", editFichaOk: false });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "completarFicha",
+        user: this.state.fichaUser,
+        pass: this.state.fichaPass,
+        callsign: this.state.editCallsign,
+        fotoBase64: this.state.editFotoBase64
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({ editFichaSaving: false, editFichaOk: true, editFichaError: "" });
+          this.loadMiFicha();
+        } else {
+          this.setState({ editFichaSaving: false, editFichaError: (data && data.message) || "No se pudo actualizar la ficha." });
+        }
+      })
+      .catch(() => {
+        this.setState({ editFichaSaving: false, editFichaError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  loadRanking = () => {
+    this.setState({ rankingLoading: true, rankingError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "listFichas", user: this.state.fichaUser, pass: this.state.fichaPass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok" && Array.isArray(data.fichas)) {
+          const edits = {};
+          data.fichas.forEach(f => { edits[f.usuario] = f.grado; });
+          this.setState({ rankingList: data.fichas, rankingLoading: false, gradoEdits: edits });
+        } else {
+          this.setState({ rankingLoading: false, rankingError: (data && data.message) || "No se pudo cargar el ranking." });
+        }
+      })
+      .catch(() => {
+        this.setState({ rankingLoading: false, rankingError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onGradoEditChange = (usuario, grado) => {
+    this.setState(s => ({ gradoEdits: { ...s.gradoEdits, [usuario]: grado } }));
+  };
+
+  guardarGrado = (usuario) => {
+    const grado = this.state.gradoEdits[usuario];
+    if (!grado) return;
+    this.setState({ gradoSavingUser: usuario, gradoError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "setGrado",
+        user: this.state.fichaUser,
+        pass: this.state.fichaPass,
+        targetUsuario: usuario,
+        grado
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({ gradoSavingUser: "" });
+          this.loadRanking();
+        } else {
+          this.setState({ gradoSavingUser: "", gradoError: (data && data.message) || "No se pudo guardar el grado." });
+        }
+      })
+      .catch(() => {
+        this.setState({ gradoSavingUser: "", gradoError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onGoToRegisterMode = () => {
+    this.setState({
+      fichaRegisterMode: true, fichaLoginError: "",
+      regDni: "", regCodigo: "", regUsuario: "", regPass: "", regPass2: "",
+      regCallsign: "", regFotoBase64: "", regFotoError: "", regError: ""
+    });
+  };
+
+  onBackToFichaLogin = () => {
+    this.setState({ fichaRegisterMode: false, regError: "" });
+  };
+
+  onRegFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, regError: "" });
+  };
+
+  onRegFotoSelected = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    this.setState({ regFotoError: "" });
+    resizeImageFile(file, 300, 0.62)
+      .then(dataUrl => this.setState({ regFotoBase64: dataUrl, regFotoError: "" }))
+      .catch(err => this.setState({ regFotoError: err.message || "No se pudo procesar la foto." }));
+  };
+
+  onRegSubmit = (e) => {
+    e.preventDefault();
+    const { regDni, regCodigo, regUsuario, regPass, regPass2, regFotoBase64 } = this.state;
+    if (!regDni.trim() || !regCodigo.trim() || !regUsuario.trim() || !regPass) {
+      this.setState({ regError: "Completá todos los campos obligatorios." });
+      return;
+    }
+    if (regUsuario.trim().length < 3) {
+      this.setState({ regError: "El usuario debe tener al menos 3 caracteres." });
+      return;
+    }
+    if (regPass.length < 8) {
+      this.setState({ regError: "La contraseña debe tener al menos 8 caracteres." });
+      return;
+    }
+    if (regPass !== regPass2) {
+      this.setState({ regError: "Las contraseñas no coinciden." });
+      return;
+    }
+    if (!regFotoBase64) {
+      this.setState({ regError: "La foto es obligatoria para tu ficha." });
+      return;
+    }
+    this.setState({ regSaving: true, regError: "" });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "crearFichaMiembro",
+        dni: regDni.trim(),
+        codigo: regCodigo.trim(),
+        usuario: regUsuario.trim(),
+        pass: regPass,
+        callsign: this.state.regCallsign.trim(),
+        fotoBase64: regFotoBase64
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            regSaving: false, fichaRegisterMode: false,
+            regDni: "", regCodigo: "", regUsuario: "", regPass: "", regPass2: "",
+            regCallsign: "", regFotoBase64: "", regFotoError: "", regError: "",
+            fichaUser: "", fichaPass: "",
+            fichaLoginError: "Usuario creado con éxito. Iniciá sesión con tus datos nuevos."
+          });
+        } else {
+          this.setState({ regSaving: false, regError: (data && data.message) || "No se pudo crear el usuario." });
+        }
+      })
+      .catch(() => {
+        this.setState({ regSaving: false, regError: "No se pudo conectar con el servidor." });
+      });
+  };
+
   renderVals() {
     const f = this.state.form;
     const isMinor = f.edad !== "" && Number(f.edad) < 18;
@@ -1445,6 +2067,34 @@ class Component extends DCLogic {
         reverting: this.state.revertingId === row.id,
         revertLabel: this.state.revertingId === row.id ? "Revirtiendo…" : "Revertir",
         onRevertirClick: () => this.revertirEstado(row.id)
+      };
+    });
+
+    const fichaRaw = this.state.ficha;
+    const ficha = fichaRaw ? {
+      ...fichaRaw,
+      rolLabel: ROL_LABELS[fichaRaw.rol] || fichaRaw.rol,
+      tieneFoto: !!fichaRaw.fotoBase64,
+      sinFoto: !fichaRaw.fotoBase64,
+      fechaCreadoLabel: formatFecha(fichaRaw.fechaCreado)
+    } : {};
+
+    const rankingView = this.state.rankingList.map((row, i) => {
+      const pending = this.state.gradoEdits[row.usuario];
+      return {
+        posicion: i + 1,
+        usuario: row.usuario,
+        callsign: row.callsign || row.nombre || row.usuario,
+        rolLabel: ROL_LABELS[row.rol] || row.rol,
+        grado: pending !== undefined ? pending : row.grado,
+        bajasTotales: row.bajasTotales,
+        tieneFoto: !!row.fotoBase64,
+        sinFoto: !row.fotoBase64,
+        fotoBase64: row.fotoBase64,
+        canEditGrado: this.state.fichaRole === "admin",
+        savingGrado: this.state.gradoSavingUser === row.usuario,
+        onGradoSelectChange: (e) => this.onGradoEditChange(row.usuario, e.target.value),
+        onGuardarGradoClick: () => this.guardarGrado(row.usuario)
       };
     });
 
@@ -1540,7 +2190,62 @@ class Component extends DCLogic {
       inscripciones: inscripcionesView,
       totalInscripciones: this.state.inscripciones.length,
       totalMiembros,
-      totalEventos
+      totalEventos,
+
+      isFichas: this.state.page === "fichas",
+      goToFichas: this.goToFichas,
+      fichaLoggedIn: this.state.fichaLoggedIn,
+      notFichaLoggedIn: !this.state.fichaLoggedIn,
+      fichaCanVerRanking: this.state.fichaRole === "admin" || this.state.fichaRole === "moderador",
+      goToMiFicha: this.goToMiFicha,
+      goToRanking: this.goToRanking,
+      fichaLogout: this.fichaLogout,
+      fichaViewMi: this.state.fichaView !== "ranking",
+      fichaViewRanking: this.state.fichaView === "ranking",
+      fichaLoading: this.state.fichaLoading,
+      fichaLoadError: this.state.fichaLoadError,
+      hasFicha: !!fichaRaw,
+      ficha,
+      bajasHoy: this.state.bajasHoy,
+      onBajasHoyChange: this.onBajasHoyChange,
+      onSumarBajas: this.onSumarBajas,
+      bajasSaving: this.state.bajasSaving,
+      bajasError: this.state.bajasError,
+      bajasOk: this.state.bajasOk,
+      editCallsign: this.state.editCallsign,
+      onEditFichaFieldChange: this.onEditFichaFieldChange,
+      onEditFotoSelected: this.onEditFotoSelected,
+      onGuardarFicha: this.onGuardarFicha,
+      editFotoError: this.state.editFotoError,
+      editFichaError: this.state.editFichaError,
+      editFichaOk: this.state.editFichaOk,
+      editFichaSaving: this.state.editFichaSaving,
+      rankingLoading: this.state.rankingLoading,
+      rankingError: this.state.rankingError,
+      gradoError: this.state.gradoError,
+      rankingView,
+      gradosOpciones: GRADOS_DISPONIBLES,
+      fichaUser: this.state.fichaUser,
+      fichaPass: this.state.fichaPass,
+      onFichaFieldChange: this.onFichaFieldChange,
+      onFichaLogin: this.onFichaLogin,
+      fichaLoginError: this.state.fichaLoginError,
+      onGoToRegisterMode: this.onGoToRegisterMode,
+      onBackToFichaLogin: this.onBackToFichaLogin,
+      fichaRegisterMode: this.state.fichaRegisterMode,
+      notFichaRegisterMode: !this.state.fichaRegisterMode,
+      onRegSubmit: this.onRegSubmit,
+      regDni: this.state.regDni,
+      regCodigo: this.state.regCodigo,
+      regUsuario: this.state.regUsuario,
+      regPass: this.state.regPass,
+      regPass2: this.state.regPass2,
+      regCallsign: this.state.regCallsign,
+      onRegFieldChange: this.onRegFieldChange,
+      onRegFotoSelected: this.onRegFotoSelected,
+      regFotoError: this.state.regFotoError,
+      regError: this.state.regError,
+      regSaving: this.state.regSaving
     };
   }
 }

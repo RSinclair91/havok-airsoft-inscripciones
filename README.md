@@ -254,4 +254,39 @@ Se probó de punta a punta contra el backend en producción: un envío con el ho
 
 Cada vez que se recibe una inscripción nueva (sea "Miembro" o "Evento puntual"), el backend envía un correo de aviso a `s.c.roberto.rs@gmail.com` con el nombre, tipo, código (si es miembro), edad, experiencia y fecha. El envío usa `MailApp.sendEmail` de Apps Script y está envuelto en su propio `try/catch`: si por algún motivo el envío del correo fallara, la inscripción se guarda igual en la planilla y la respuesta al formulario no se ve afectada — el aviso por correo es un extra, no una condición para que la inscripción se registre.
 
+## Fichas de usuario (foto, scoring de bajas y grados)
+
+Roberto pidió una ficha individual para cada persona del equipo — con lugar para una foto — donde cada uno pueda cargar la cantidad de bajas causadas en la partida del día, que esas bajas se vayan acumulando en un total visible en la ficha, y eventualmente asignar grados para armar un ranking. Tres niveles de acceso: administrador (Roberto), moderadores, y miembros del equipo — estos últimos solo pueden ver y cargar su propia ficha, nunca la de otra persona.
+
+### Cómo se crea la cuenta de una ficha
+
+Antes de tener ficha, alguien tiene que ser ya un miembro **aprobado** (Tipo "Miembro del equipo", Estado "Aprobado" en la planilla principal de inscripciones). Desde el botón **"Mi Ficha"** en la barra superior del sitio, esa persona entra a una pantalla de login separada del panel admin; ahí puede elegir "¿Sos miembro aprobado y todavía no creaste tu usuario?" para llegar a un formulario de alta que pide su DNI y el Código de inscripción que recibió al anotarse (`HVK-2026-####`), un callsign opcional, un usuario y contraseña a elección, y **una foto** (obligatoria). El backend valida ese DNI + Código contra la fila aprobada correspondiente antes de crear la cuenta, así que nadie puede crearse una ficha sin haber sido aprobado antes como miembro, y no se puede crear dos veces una cuenta para la misma inscripción.
+
+El administrador y los moderadores no pasan por este alta: como ya tienen sus propias credenciales (las mismas del panel admin), su ficha se crea automáticamente la primera vez que entran a "Mi Ficha" con esas credenciales, con grado por defecto "Comandante" (admin) u "Oficial" (moderador) y 0 bajas, y pueden completar después su callsign y foto desde su propia ficha.
+
+### La foto se guarda en la propia planilla, no en Google Drive
+
+Para evitar tener que pedir permisos nuevos de Google Drive al deploy existente (lo que hubiera significado una pantalla de reconsentimiento y el riesgo de romper el acceso público anónimo que ya tiene la app), la foto no se sube a Drive: el navegador la redimensiona localmente (máximo 300px de lado más largo, JPEG con compresión) antes de mandarla, y el backend la guarda como texto (formato `data:image/jpeg;base64,...`) directamente en una celda de la planilla. Con ese tamaño, cada foto ocupa bastante menos que el límite de 45.000 caracteres que valida el backend antes de guardarla.
+
+### Estructura en la planilla
+
+Se agregaron dos hojas nuevas, separadas de las de inscripciones:
+
+- **Fichas**: una fila por persona con cuenta creada — `Usuario`, `Rol` (admin/moderador/miembro), `InscripcionId` (el Id de su fila en la planilla de inscripciones, vacío para admin/moderador), `Nombre`, `Callsign`, `FotoBase64`, `Grado`, `BajasTotales`, `PassHash`, `PassSalt` (la contraseña de la ficha se guarda encriptada, igual que la de moderadores y admin — nunca en texto plano), `Estado`, `FechaCreado`.
+- **ScoringHistorial**: un registro de cada vez que alguien suma bajas — fecha, usuario, rol, cuántas bajas sumó en esa carga puntual, y el total acumulado resultante. Sirve como historial de auditoría; la ficha en sí solo muestra el total acumulado (`BajasTotales`), no este detalle día por día.
+
+### Qué puede hacer cada nivel
+
+- **Miembro**: ve solo su propia ficha (foto, callsign, grado, bajas totales y fecha desde que es miembro), puede cargar la cantidad de bajas del día (se suma al total, no lo reemplaza) y puede editar su callsign y su foto. No ve la ficha de nadie más ni el ranking del equipo.
+- **Moderador**: además de su propia ficha, ve el **ranking del equipo** — el listado completo de fichas ordenado por bajas totales (de mayor a menor), con foto, callsign, rol y grado de cada persona. No puede cambiar el grado de nadie.
+- **Administrador**: todo lo anterior, más la posibilidad de asignarle un grado nuevo a cualquier ficha desde el propio ranking (un selector con los grados disponibles — Recluta, Soldado, Cabo, Sargento, Teniente, Capitán, Comandante — y un botón "Guardar" por fila).
+
+Estos permisos están validados en el backend (`Code.gs`), no solo ocultando botones en la pantalla: las acciones `listFichas` y `setGrado` rechazan el pedido si quien lo hace no tiene el rol necesario, así que aunque alguien manipulara la página no podría ver el ranking siendo miembro ni cambiar un grado sin ser administrador.
+
+### Verificación
+
+El backend se probó de punta a punta contra la planilla y el login reales, con una función de prueba temporal en el editor de Apps Script (creaba fichas y filas de historial de prueba, ejercitaba las siete acciones nuevas —incluyendo el alta completa de una ficha de miembro simulando una inscripción ya aprobada—, verificaba los resultados y borraba todo lo que había creado antes de terminar, sin dejar rastros en las hojas reales). Se desplegó como una nueva versión del deploy existente una vez confirmado que las 14 verificaciones pasaban y que las hojas quedaban limpias.
+
+El frontend (la pantalla "Mi Ficha", el login/alta, la carga de bajas, la edición de ficha propia y el ranking con edición de grado) se probó localmente con Playwright simulando las respuestas del backend real: login y vista de ficha de un miembro (con su foto, callsign y bajas totales), carga de bajas del día y edición de callsign, y para un administrador el ranking completo con cambio de grado de otra persona (confirmando que el pedido al backend lleva el usuario y el grado correctos). También se probó el alta de cuenta nueva: que no se puede enviar sin elegir una foto, que la foto se redimensiona correctamente por debajo del límite de tamaño, y que al crear la cuenta con éxito vuelve a la pantalla de login con un aviso para iniciar sesión con los datos nuevos.
+
 La primera vez que se agregó esta función fue necesario autorizar manualmente el permiso de envío de correo desde el editor de Apps Script (ejecutando la función una vez y aceptando el permiso solicitado); si en el futuro se mueve el proyecto a otra cuenta de Google, habría que repetir ese paso una vez.
