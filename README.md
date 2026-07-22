@@ -105,6 +105,17 @@ Esto evita que cualquiera que abra el código fuente de la página vea la contra
 
 Para cambiar el usuario o la contraseña: Apps Script del proyecto → ícono de engranaje (Configuración del proyecto) → Propiedades de las secuencias de comandos → editar `ADMIN_USER` / `ADMIN_PASS`.
 
+### Credenciales más fuertes y bloqueo temporal ante intentos fallidos
+
+El usuario y contraseña originales (`adminhavok` / `havok2026`) eran cortos y fáciles de adivinar (una combinación obvia con el nombre del equipo y el año), y el backend no tenía ningún límite de intentos: se podía probar contraseñas en bucle sin restricción. Ahora que la planilla guarda DNI, teléfonos, emails y datos de menores, valía la pena reforzar esto antes de dar por cerrado el panel admin.
+
+Se hicieron dos cambios:
+
+- **Credenciales nuevas**: se generaron un usuario y una contraseña aleatorios y largos (20+ caracteres, con mayúsculas, minúsculas, números y símbolos) y se cargaron en las mismas Script Properties (`ADMIN_USER` / `ADMIN_PASS`). Roberto tiene las credenciales nuevas por separado; no se repiten acá.
+- **Bloqueo temporal (rate limiting)**: el backend ahora cuenta los intentos fallidos de login (compartido entre `adminLogin`, `list`, `delete` y `setEstado`, ya que las cuatro acciones validan usuario/contraseña) usando `CacheService`. Al quinto intento fallido seguido, cualquier acción que requiera login queda bloqueada durante 15 minutos, devolviendo el mensaje "Demasiados intentos fallidos. Proba de nuevo en X minutos." — incluso si después se manda la contraseña correcta. Un login exitoso resetea el contador. Esto significa que si el propio Roberto se equivoca de contraseña 5 veces seguidas, también va a tener que esperar los 15 minutos; es una limitación conocida y aceptada de este tipo de protección simple (no hay forma de distinguir "intentos legítimos con error de tipeo" de "un ataque").
+
+Se probó de punta a punta contra el backend en producción: se confirmó que las credenciales viejas ya no funcionan, que las nuevas sí, que el quinto intento fallido dispara el bloqueo (con las cuatro acciones respetándolo), y que ni siquiera la contraseña correcta pasa mientras dura el bloqueo.
+
 ## Aviso por correo de nuevas inscripciones
 
 Cada vez que se recibe una inscripción nueva (sea "Miembro" o "Evento puntual"), el backend envía un correo de aviso a `s.c.roberto.rs@gmail.com` con el nombre, tipo, código (si es miembro), edad, experiencia y fecha. El envío usa `MailApp.sendEmail` de Apps Script y está envuelto en su propio `try/catch`: si por algún motivo el envío del correo fallara, la inscripción se guarda igual en la planilla y la respuesta al formulario no se ve afectada — el aviso por correo es un extra, no una condición para que la inscripción se registre.
