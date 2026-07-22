@@ -194,6 +194,7 @@
         <button class="btn btn-secondary" onClick="{{ goToUsuarios }}">Usuarios</button>
         <a href="{{ sheetUrl }}" target="_blank" class="btn btn-primary">Abrir Google Sheet</a>
       </sc-if>
+      <button class="btn btn-secondary" onClick="{{ goToFichasFromAdmin }}">Mi Ficha</button>
       <button class="btn btn-secondary" onClick="{{ adminLogout }}">Cerrar sesión</button>
       <button class="btn btn-secondary" onClick="{{ goToLanding }}">← Volver al sitio</button>
     </div>
@@ -1724,6 +1725,40 @@ class Component extends DCLogic {
     }
   };
 
+  goToFichasFromAdmin = () => {
+    this.setState({ page: "fichas" });
+    if (this.state.fichaLoggedIn) {
+      this.goToMiFicha();
+      return;
+    }
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
+    this.setState({ fichaUser: user, fichaPass: pass, fichaLoginError: "Verificando..." });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "fichaLogin", user, pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            fichaLoggedIn: true,
+            fichaRole: data.role || "admin",
+            fichaLoginError: "",
+            fichaView: "mi"
+          });
+          this.loadMiFicha();
+        } else {
+          this.setState({ fichaLoginError: (data && data.message) || "No se pudo ingresar a tu ficha." });
+        }
+      })
+      .catch(() => {
+        this.setState({ fichaLoginError: "No se pudo conectar con el servidor." });
+      });
+  };
+
   onFichaFieldChange = (e) => {
     const { name, value } = e.target;
     this.setState({ [name]: value, fichaLoginError: "" });
@@ -2194,6 +2229,7 @@ class Component extends DCLogic {
 
       isFichas: this.state.page === "fichas",
       goToFichas: this.goToFichas,
+      goToFichasFromAdmin: this.goToFichasFromAdmin,
       fichaLoggedIn: this.state.fichaLoggedIn,
       notFichaLoggedIn: !this.state.fichaLoggedIn,
       fichaCanVerRanking: this.state.fichaRole === "admin" || this.state.fichaRole === "moderador",
