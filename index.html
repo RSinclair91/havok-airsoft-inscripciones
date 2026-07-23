@@ -1670,7 +1670,7 @@ class Component extends DCLogic {
             deletingId: ""
           }));
         } else {
-          this.setState({ deletingId: "", deleteConfirmId: "", deleteError: "No se pudo borrar esa inscripción." });
+          this.setState({ deletingId: "", deleteConfirmId: "", deleteError: data.message || "No se pudo borrar esa inscripción." });
         }
       })
       .catch(() => {
@@ -2266,7 +2266,7 @@ class Component extends DCLogic {
       submitError: this.state.submitError,
       codigoGenerado: this.state.codigoGenerado,
       mensajeConfirmacion: f.tipo === "miembro"
-        ? "En breve un responsable de la agrupación te va a contactar para coordinar el pago de la cuota y confirmar tu ingreso."
+        ? "En breve un responsable de la agrupación te va a contactar para coordinar el pago de la cuota y confirmar tu ingreso. Cuando tu inscripción sea aprobada, te vamos a enviar un email al correo declarado con el código para crear tu usuario."
         : "Un responsable de la agrupación te va a contactar para confirmar tu lugar en la próxima partida.",
       resetForm: this.resetForm,
       inscripciones: inscripcionesView,
