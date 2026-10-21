@@ -12,7 +12,6 @@ Página web de inscripción para el equipo de airsoft **Havok**: formulario de a
 - `assets/rifle-patch.jpg` — foto real de equipamiento con el parche Havok (sección "Nosotros" y banner de la cinta divisoria).
 - `uploads/Reglamento_Equipo_Airsoft.docx` — reglamento interno original en Word.
 - `uploads/foto-equipo.jpeg` — foto del equipo.
-- `apps-script/Code.gs` — copia de referencia del backend (Google Apps Script). La versión que corre es la del editor de Apps Script vinculado a la planilla; si se cambia allá, conviene actualizar esta copia.
 - `_ds/` — archivos fuente del sistema de diseño (tokens, guía de estilo). No son necesarios para que el sitio funcione; se conservan como referencia.
 
 ## Cómo verla
@@ -297,31 +296,3 @@ El backend se probó de punta a punta contra la planilla y el login reales, con 
 El frontend (la pantalla "Mi Ficha", el login/alta, la carga de bajas, la edición de ficha propia y el ranking con edición de grado) se probó localmente con Playwright simulando las respuestas del backend real: login y vista de ficha de un miembro (con su foto, callsign y bajas totales), carga de bajas del día y edición de callsign, y para un administrador el ranking completo con cambio de grado de otra persona (confirmando que el pedido al backend lleva el usuario y el grado correctos). También se probó el alta de cuenta nueva: que no se puede enviar sin elegir una foto, que la foto se redimensiona correctamente por debajo del límite de tamaño, y que al crear la cuenta con éxito vuelve a la pantalla de login con un aviso para iniciar sesión con los datos nuevos. Se agregó además una prueba específica para el campo "Nombre completo": que aparece precargado en el formulario "Editar ficha" con el nombre real ya guardado, que al guardarlo se envía correctamente en el pedido `completarFicha`, y que tanto en la ficha individual como en cada fila del ranking el texto debajo del callsign muestra ese nombre real en vez del rol.
 
 La primera vez que se agregó esta función fue necesario autorizar manualmente el permiso de envío de correo desde el editor de Apps Script (ejecutando la función una vez y aceptando el permiso solicitado); si en el futuro se mueve el proyecto a otra cuenta de Google, habría que repetir ese paso una vez.
-
-
-## Ingreso unificado, sesiones y recuperación de contraseña (octubre 2026)
-
-### Qué cambió para los usuarios
-
-- **Un solo botón "Ingresar"** en la barra del sitio (antes había "Mi Ficha" y "Acceso Miembros", que en realidad era el acceso del staff). La misma pantalla sirve para miembros, moderadores y el administrador: según el rol, el sistema lleva al panel admin o a la ficha. Con la sesión abierta, el botón pasa a decir "Mi cuenta".
-- **La sesión se mantiene al recargar la página** (y al cerrar y volver a abrir el navegador) durante 6 horas desde el último uso. "Cerrar sesión" la corta en el momento.
-- **Recuperar contraseña para todos**: desde "¿Olvidaste tu contraseña?" se escribe el usuario y llega un código de un solo uso (vence en 15 minutos) al email de la cuenta: para el administrador, su correo; para un miembro, el email que declaró en su inscripción; para un moderador, el email que le cargue el administrador.
-- **Cambiar contraseña desde Mi Ficha** (cualquier rol), pidiendo la contraseña actual.
-- **Email de moderadores**: en Usuarios, el administrador puede cargar un email al crear un moderador o agregárselo a uno existente; sin email, ese moderador no puede recuperar su contraseña solo.
-- **Grados eliminados**: ya no se muestran en la ficha ni en el ranking, y no se pueden asignar. El ranking sigue ordenado por bajas. La columna `Grado` de la hoja `Fichas` queda en la planilla pero ya no se usa.
-
-### Cómo funciona por dentro
-
-- Al ingresar, el backend (acción `login`) devuelve un **token de sesión** aleatorio que se guarda en `CacheService` (6 horas, se renueva con cada uso). La página guarda solo ese token en `localStorage`; la contraseña ya no queda en memoria ni viaja en cada pedido.
-- Cada token queda atado a la "versión" de la contraseña de su cuenta: si la contraseña cambia, o la cuenta se elimina, las sesiones abiertas dejan de valer automáticamente.
-- Acciones nuevas: `login`, `session`, `logout`, `changePassword`, `requestPasswordReset`, `confirmPasswordReset`, `setModeratorEmail`. Se eliminó `setGrado`.
-- Todas las acciones existentes aceptan el token y además siguen aceptando usuario + contraseña, para que la versión anterior del sitio siga funcionando mientras se publica la nueva (no importa en qué orden se actualicen backend y página).
-
-### Bug corregido: los miembros bloqueaban el acceso del administrador
-
-El bloqueo por intentos fallidos usaba un **único contador para todo el sitio**, y la validación de las acciones de la ficha probaba primero las credenciales de admin/moderador: para un miembro eso contaba como intento fallido aunque su contraseña fuera correcta. Resultado: con 4 o 5 acciones de cualquier miembro (entrar, ver la ficha, sumar bajas…) en 15 minutos, se bloqueaba el ingreso de todos, administrador incluido. Ahora el bloqueo es **por usuario** (5 intentos fallidos de ese usuario → 15 minutos), con un freno general solo ante 50 fallos en 15 minutos (señal de ataque).
-
-### Verificación
-
-- Backend: 58 pruebas automatizadas ejecutando el `Code.gs` real contra una simulación de Apps Script (planilla, caché, propiedades y correo simulados): login de los tres roles, permisos, bloqueo por usuario, sesiones, invalidación al cambiar contraseña o eliminar un moderador, recuperación para cada rol, compatibilidad con el sitio anterior, antispam y numeración `HVK-2026-####`. También se reprodujo el bug del bloqueo con el código anterior.
-- Página: 28 pruebas con Playwright conectando la página real a ese backend simulado (ingreso, recarga manteniendo sesión, cambio y recuperación de contraseña, panel, moderadores, sesión vencida, alta de miembro), sin errores de JavaScript, en escritorio y celular.

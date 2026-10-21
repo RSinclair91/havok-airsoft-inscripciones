@@ -181,7 +181,7 @@
           </sc-if>
           <button type="submit" class="btn btn-primary" disabled="{{ modPassSaving }}">Guardar y continuar</button>
         </form>
-        <button class="btn btn-secondary" onClick="{{ logout }}" style="margin-top:var(--space-2);">Cerrar sesión</button>
+        <button class="btn btn-secondary" onClick="{{ adminLogout }}" style="margin-top:var(--space-2);">Cerrar sesión</button>
       </div>
     </div>
     </sc-if>
@@ -195,7 +195,7 @@
         <a href="{{ sheetUrl }}" target="_blank" class="btn btn-primary">Abrir Google Sheet</a>
       </sc-if>
       <button class="btn btn-secondary" onClick="{{ goToFichasFromAdmin }}">Mi Ficha</button>
-      <button class="btn btn-secondary" onClick="{{ logout }}">Cerrar sesión</button>
+      <button class="btn btn-secondary" onClick="{{ adminLogout }}">Cerrar sesión</button>
       <button class="btn btn-secondary" onClick="{{ goToLanding }}">← Volver al sitio</button>
     </div>
 
@@ -313,7 +313,7 @@
     <div class="havok-grid-2" style="gap:var(--space-6);align-items:start;">
       <div class="card elev-sm" style="gap:var(--space-4);">
         <div class="card-kicker">Mis credenciales</div>
-        <p class="text-muted" style="font-size:12.5px;margin:0;">Cambiá tu usuario y contraseña de administrador.</p>
+        <p class="text-muted" style="font-size:12.5px;margin:0;">Cambiá tu usuario y contraseña de administrador. Vas a tener que volver a iniciar sesión después de guardar.</p>
         <form onSubmit="{{ onChangeCredentials }}" style="display:flex;flex-direction:column;gap:var(--space-3);">
           <div class="field">
             <label>Nuevo usuario</label>
@@ -329,9 +329,6 @@
           </div>
           <sc-if value="{{ credError }}" hint-placeholder-val="{{ false }}">
             <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ credError }}</div>
-          </sc-if>
-          <sc-if value="{{ credOk }}" hint-placeholder-val="{{ false }}">
-            <div class="tag tag-accent">Credenciales actualizadas.</div>
           </sc-if>
           <button type="submit" class="btn btn-primary" disabled="{{ credSaving }}">Guardar cambios</button>
         </form>
@@ -354,13 +351,9 @@
           <div style="display:flex;flex-direction:column;gap:var(--space-2);">
             <sc-for list="{{ moderadoresView }}" as="mod" hint-placeholder-count="2">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);padding:8px 0;border-bottom:1px solid var(--color-divider);">
-                <div style="flex:1;min-width:0;">
+                <div>
                   <div style="font-weight:500;">{{ mod.user }}</div>
                   <div style="font-size:11.5px;color:var(--color-neutral-500);">Creado: {{ mod.creadoFecha }}</div>
-                  <div style="display:flex;gap:6px;margin-top:6px;">
-                    <input class="input" style="padding:4px 8px;font-size:12px;" type="email" placeholder="Email para recuperar contraseña" value="{{ mod.emailEdit }}" onChange="{{ mod.onEmailChange }}" autocomplete="off">
-                    <button class="btn btn-secondary" onClick="{{ mod.onEmailSave }}" disabled="{{ mod.savingEmail }}" style="padding:4px 10px;font-size:12px;">Guardar</button>
-                  </div>
                 </div>
                 <button class="btn btn-secondary" onClick="{{ mod.onDeleteClick }}" style="padding:4px 10px;font-size:12px;color:#c96a5a;border-color:#c96a5a;">Eliminar</button>
               </div>
@@ -369,9 +362,6 @@
         </sc-if>
         <sc-if value="{{ modDeleteError }}" hint-placeholder-val="{{ false }}">
           <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ modDeleteError }}</div>
-        </sc-if>
-        <sc-if value="{{ modEmailMsg }}" hint-placeholder-val="{{ false }}">
-          <div class="tag tag-outline">{{ modEmailMsg }}</div>
         </sc-if>
 
         <form onSubmit="{{ onCreateModerator }}" style="display:flex;flex-direction:column;gap:var(--space-3);border-top:1px solid var(--color-divider);padding-top:var(--space-4);">
@@ -382,10 +372,6 @@
           <div class="field">
             <label>Contraseña</label>
             <input class="input" type="password" name="newModPass" value="{{ newModPass }}" onChange="{{ onNewModFieldChange }}" required="{{ true }}" autocomplete="new-password">
-          </div>
-          <div class="field">
-            <label>Email (opcional, para que pueda recuperar su contraseña)</label>
-            <input class="input" type="email" name="newModEmail" value="{{ newModEmail }}" onChange="{{ onNewModFieldChange }}" autocomplete="off">
           </div>
           <sc-if value="{{ modCreateError }}" hint-placeholder-val="{{ false }}">
             <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ modCreateError }}</div>
@@ -399,6 +385,77 @@
   </div>
   </sc-if>
 
+  <sc-if value="{{ notAdminLoggedIn }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:400px;margin:0 auto;padding:120px 24px;">
+    <div class="card elev-md" style="padding:var(--space-8);gap:var(--space-4);">
+
+      <sc-if value="{{ notForgotMode }}" hint-placeholder-val="{{ true }}">
+      <div style="text-align:center;margin-bottom:var(--space-2);">
+        <div class="nav-brand" style="margin-right:0;">Panel admin — Havok</div>
+        <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Ingresá con tus credenciales de administrador.</p>
+      </div>
+      <form onSubmit="{{ onAdminLogin }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+        <div class="field">
+          <label>Usuario</label>
+          <input class="input" name="adminUser" value="{{ adminUser }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input class="input" type="password" name="adminPass" value="{{ adminPass }}" onChange="{{ onAdminFieldChange }}" required="{{ true }}" autocomplete="current-password">
+        </div>
+        <sc-if value="{{ adminError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ adminError }}</div>
+        </sc-if>
+        <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onForgotClick }}" style="align-self:center;font-size:12.5px;">¿Olvidaste tu contraseña de administrador?</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ goToLanding }}" style="align-self:center;">Volver al sitio</button>
+      </form>
+      </sc-if>
+
+      <sc-if value="{{ forgotMode }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;margin-bottom:var(--space-2);">
+        <div class="nav-brand" style="margin-right:0;">Recuperar contraseña</div>
+        <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Solo para el administrador (nivel 1). Te enviamos un código de un solo uso por email.</p>
+      </div>
+
+      <sc-if value="{{ notResetRequestSent }}" hint-placeholder-val="{{ true }}">
+      <form onSubmit="{{ onRequestResetCode }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+        <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ resetError }}</div>
+        </sc-if>
+        <button type="submit" class="btn btn-primary btn-block" disabled="{{ resetRequesting }}">Enviar código por email</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onBackToLogin }}" style="align-self:center;">Volver al login</button>
+      </form>
+      </sc-if>
+
+      <sc-if value="{{ resetRequestSent }}" hint-placeholder-val="{{ false }}">
+      <form onSubmit="{{ onConfirmReset }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+        <p class="text-muted" style="font-size:12.5px;margin:0;">Revisá el email y pegá el código junto con tu contraseña nueva.</p>
+        <div class="field">
+          <label>Código recibido por email</label>
+          <input class="input" name="resetCode" value="{{ resetCode }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="one-time-code">
+        </div>
+        <div class="field">
+          <label>Contraseña nueva</label>
+          <input class="input" type="password" name="resetNewPass" value="{{ resetNewPass }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label>Confirmar contraseña</label>
+          <input class="input" type="password" name="resetNewPass2" value="{{ resetNewPass2 }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="new-password">
+        </div>
+        <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
+          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ resetError }}</div>
+        </sc-if>
+        <button type="submit" class="btn btn-primary btn-block" disabled="{{ resetConfirming }}">Cambiar contraseña</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onRequestResetCode }}" style="align-self:center;font-size:12.5px;">Reenviar código</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ onBackToLogin }}" style="align-self:center;">Volver al login</button>
+      </form>
+      </sc-if>
+      </sc-if>
+
+    </div>
+  </div>
+  </sc-if>
 </sc-if>
 
 <sc-if value="{{ isFichas }}" hint-placeholder-val="{{ false }}">
@@ -411,10 +468,7 @@
     <sc-if value="{{ fichaCanVerRanking }}" hint-placeholder-val="{{ false }}">
       <button class="btn btn-secondary" onClick="{{ goToRanking }}">Ranking del equipo</button>
     </sc-if>
-    <sc-if value="{{ fichaIsStaff }}" hint-placeholder-val="{{ false }}">
-      <button class="btn btn-secondary" onClick="{{ goToAdmin }}">Panel admin</button>
-    </sc-if>
-    <button class="btn btn-secondary" onClick="{{ logout }}">Cerrar sesión</button>
+    <button class="btn btn-secondary" onClick="{{ fichaLogout }}">Cerrar sesión</button>
     <button class="btn btn-secondary" onClick="{{ goToLanding }}">← Volver al sitio</button>
   </div>
 
@@ -499,31 +553,6 @@
         <button type="submit" class="btn btn-secondary" disabled="{{ editFichaSaving }}" style="align-self:flex-start;">Guardar cambios</button>
       </form>
     </div>
-
-    <div class="card elev-sm" style="gap:var(--space-4);margin-top:var(--space-6);">
-      <div class="card-kicker">Cambiar contraseña</div>
-      <form onSubmit="{{ onChangePassword }}" style="display:flex;flex-direction:column;gap:var(--space-3);max-width:420px;">
-        <div class="field">
-          <label>Contraseña actual</label>
-          <input class="input" type="password" name="pwdActual" value="{{ pwdActual }}" onChange="{{ onPwdFieldChange }}" required="{{ true }}" autocomplete="current-password">
-        </div>
-        <div class="field">
-          <label>Contraseña nueva (mínimo 8 caracteres)</label>
-          <input class="input" type="password" name="pwdNueva" value="{{ pwdNueva }}" onChange="{{ onPwdFieldChange }}" required="{{ true }}" autocomplete="new-password">
-        </div>
-        <div class="field">
-          <label>Confirmar contraseña nueva</label>
-          <input class="input" type="password" name="pwdNueva2" value="{{ pwdNueva2 }}" onChange="{{ onPwdFieldChange }}" required="{{ true }}" autocomplete="new-password">
-        </div>
-        <sc-if value="{{ pwdError }}" hint-placeholder-val="{{ false }}">
-          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ pwdError }}</div>
-        </sc-if>
-        <sc-if value="{{ pwdOk }}" hint-placeholder-val="{{ false }}">
-          <div class="tag tag-accent">Contraseña actualizada.</div>
-        </sc-if>
-        <button type="submit" class="btn btn-secondary" disabled="{{ pwdSaving }}" style="align-self:flex-start;">Cambiar contraseña</button>
-      </form>
-    </div>
     </sc-if>
   </sc-if>
 
@@ -562,86 +591,32 @@
   </sc-if>
   </sc-if>
 
-</div>
-</sc-if>
+  <sc-if value="{{ notFichaLoggedIn }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:420px;margin:60px auto;">
+    <div class="card elev-md" style="padding:var(--space-8);gap:var(--space-4);">
 
-<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
-<div style="max-width:420px;margin:0 auto;padding:90px 24px;">
-  <div class="card elev-md" style="padding:var(--space-8);gap:var(--space-4);">
-
-    <sc-if value="{{ loginModeLogin }}" hint-placeholder-val="{{ true }}">
-      <div style="text-align:center;margin-bottom:var(--space-2);">
-        <div class="nav-brand" style="margin-right:0;">Ingresar — Havok</div>
-        <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Miembros, moderadores y administración entran por acá.</p>
-      </div>
-      <form onSubmit="{{ onLogin }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
-        <div class="field">
-          <label>Usuario</label>
-          <input class="input" name="loginUser" value="{{ loginUser }}" onChange="{{ onLoginFieldChange }}" required="{{ true }}" autocomplete="username">
+      <sc-if value="{{ notFichaRegisterMode }}" hint-placeholder-val="{{ true }}">
+        <div style="text-align:center;margin-bottom:var(--space-2);">
+          <div class="nav-brand" style="margin-right:0;">Mi Ficha — Havok</div>
+          <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Ingresá con tu usuario para ver tu ficha personal.</p>
         </div>
-        <div class="field">
-          <label>Contraseña</label>
-          <input class="input" type="password" name="loginPass" value="{{ loginPass }}" onChange="{{ onLoginFieldChange }}" required="{{ true }}" autocomplete="current-password">
-        </div>
-        <sc-if value="{{ loginInfo }}" hint-placeholder-val="{{ false }}">
-          <div class="tag tag-accent">{{ loginInfo }}</div>
-        </sc-if>
-        <sc-if value="{{ loginError }}" hint-placeholder-val="{{ false }}">
-          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ loginError }}</div>
-        </sc-if>
-        <button type="submit" class="btn btn-primary btn-block" disabled="{{ loginBusy }}">{{ loginButtonLabel }}</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ onForgotClick }}" style="align-self:center;font-size:12.5px;">¿Olvidaste tu contraseña?</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ onGoToRegisterMode }}" style="align-self:center;font-size:12.5px;">¿Sos miembro aprobado y todavía no creaste tu usuario?</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ goToLanding }}" style="align-self:center;">Volver al sitio</button>
-      </form>
-    </sc-if>
-
-    <sc-if value="{{ forgotMode }}" hint-placeholder-val="{{ false }}">
-      <div style="text-align:center;margin-bottom:var(--space-2);">
-        <div class="nav-brand" style="margin-right:0;">Recuperar contraseña</div>
-        <p class="text-muted" style="font-size:13px;margin-top:var(--space-2);">Te mandamos un código de un solo uso al email de tu cuenta. Si sos miembro, es el email que pusiste al inscribirte.</p>
-      </div>
-
-      <sc-if value="{{ notResetRequestSent }}" hint-placeholder-val="{{ true }}">
-      <form onSubmit="{{ onRequestResetCode }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
-        <div class="field">
-          <label>Tu usuario</label>
-          <input class="input" name="resetUser" value="{{ resetUser }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="username">
-        </div>
-        <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
-          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ resetError }}</div>
-        </sc-if>
-        <button type="submit" class="btn btn-primary btn-block" disabled="{{ resetRequesting }}">Enviar código por email</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ onBackToLogin }}" style="align-self:center;">Volver al ingreso</button>
-      </form>
+        <form onSubmit="{{ onFichaLogin }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
+          <div class="field">
+            <label>Usuario</label>
+            <input class="input" name="fichaUser" value="{{ fichaUser }}" onChange="{{ onFichaFieldChange }}" required="{{ true }}" autocomplete="username">
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input class="input" type="password" name="fichaPass" value="{{ fichaPass }}" onChange="{{ onFichaFieldChange }}" required="{{ true }}" autocomplete="current-password">
+          </div>
+          <sc-if value="{{ fichaLoginError }}" hint-placeholder-val="{{ false }}">
+            <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ fichaLoginError }}</div>
+          </sc-if>
+          <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+          <button type="button" class="btn btn-ghost" onClick="{{ onGoToRegisterMode }}" style="align-self:center;font-size:12.5px;">¿Sos miembro aprobado y todavía no creaste tu usuario?</button>
+          <button type="button" class="btn btn-ghost" onClick="{{ goToLanding }}" style="align-self:center;">Volver al sitio</button>
+        </form>
       </sc-if>
-
-      <sc-if value="{{ resetRequestSent }}" hint-placeholder-val="{{ false }}">
-      <form onSubmit="{{ onConfirmReset }}" style="display:flex;flex-direction:column;gap:var(--space-4);">
-        <div class="tag tag-accent" style="white-space:normal;line-height:1.4;">{{ resetInfo }}</div>
-        <div class="field">
-          <label>Código recibido por email</label>
-          <input class="input" name="resetCode" value="{{ resetCode }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="one-time-code">
-        </div>
-        <div class="field">
-          <label>Contraseña nueva</label>
-          <input class="input" type="password" name="resetNewPass" value="{{ resetNewPass }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="new-password">
-        </div>
-        <div class="field">
-          <label>Confirmar contraseña</label>
-          <input class="input" type="password" name="resetNewPass2" value="{{ resetNewPass2 }}" onChange="{{ onResetFieldChange }}" required="{{ true }}" autocomplete="new-password">
-        </div>
-        <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
-          <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ resetError }}</div>
-        </sc-if>
-        <button type="submit" class="btn btn-primary btn-block" disabled="{{ resetConfirming }}">Cambiar contraseña</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ onRequestResetCode }}" style="align-self:center;font-size:12.5px;">Reenviar código</button>
-        <button type="button" class="btn btn-ghost" onClick="{{ onBackToLogin }}" style="align-self:center;">Volver al ingreso</button>
-      </form>
-      </sc-if>
-
-      <p class="text-muted" style="font-size:11.5px;margin:0;text-align:center;">¿Sos moderador y no te llega nada? Puede que tu usuario no tenga email cargado: pedile al administrador que lo cargue.</p>
-    </sc-if>
 
       <sc-if value="{{ fichaRegisterMode }}" hint-placeholder-val="{{ false }}">
         <div style="text-align:center;margin-bottom:var(--space-2);">
@@ -689,7 +664,10 @@
         </form>
       </sc-if>
 
+    </div>
   </div>
+  </sc-if>
+
 </div>
 </sc-if>
 
@@ -738,7 +716,8 @@
     <a href="#nosotros">Nosotros</a>
     <a href="#reglamento" onClick="{{ goToReglamento }}">Reglamento</a>
     <a href="#inscripcion" class="btn btn-primary">Inscribite</a>
-    <button class="btn btn-secondary" onClick="{{ onNavAccount }}">{{ navAccountLabel }}</button>
+    <button class="btn btn-secondary" onClick="{{ goToFichas }}">Mi Ficha</button>
+    <button class="btn btn-secondary" onClick="{{ goToAdmin }}">Acceso Miembros</button>
   </header>
 
   <section class="havok-hero" style="padding:130px var(--space-6) 100px;overflow:hidden;">
@@ -1027,7 +1006,6 @@ const emptyForm = () => ({
 });
 
 const ROL_LABELS = { admin: "Admin", moderador: "Moderador", miembro: "Miembro" };
-const SESSION_STORAGE_KEY = "havokSession";
 
 function resizeImageFile(file, maxSize, quality) {
   return new Promise((resolve, reject) => {
@@ -1071,18 +1049,12 @@ class Component extends DCLogic {
     codigoGenerado: "",
     submitting: false,
     submitError: "",
-    sessionToken: "",
-    sessionUser: "",
-    sessionRole: "",
-    sessionRestoring: false,
-    loginUser: "",
-    loginPass: "",
-    loginError: "",
-    loginInfo: "",
-    loginBusy: false,
     adminLoggedIn: false,
+    adminUser: "",
+    adminPass: "",
     adminRole: "",
     adminView: "solicitudes",
+    adminError: "",
     adminDataLoading: false,
     adminDataError: "",
     deleteConfirmId: "",
@@ -1096,16 +1068,11 @@ class Component extends DCLogic {
     credNewPass2: "",
     credSaving: false,
     credError: "",
-    credOk: false,
     moderadores: [],
     moderadoresLoading: false,
     moderadoresError: "",
     newModUser: "",
     newModPass: "",
-    newModEmail: "",
-    modEmailEdits: {},
-    modEmailSavingUser: "",
-    modEmailMsg: "",
     modCreating: false,
     modCreateError: "",
     modDeletingUser: "",
@@ -1121,15 +1088,16 @@ class Component extends DCLogic {
     resetRequestSent: false,
     resetRequesting: false,
     resetConfirming: false,
-    resetUser: "",
-    resetInfo: "",
     resetCode: "",
     resetNewPass: "",
     resetNewPass2: "",
     resetError: "",
 
     fichaLoggedIn: false,
+    fichaUser: "",
+    fichaPass: "",
     fichaRole: "",
+    fichaLoginError: "",
     fichaView: "mi",
     fichaRegisterMode: false,
     ficha: null,
@@ -1146,12 +1114,6 @@ class Component extends DCLogic {
     editFichaSaving: false,
     editFichaError: "",
     editFichaOk: false,
-    pwdActual: "",
-    pwdNueva: "",
-    pwdNueva2: "",
-    pwdSaving: false,
-    pwdError: "",
-    pwdOk: false,
     rankingList: [],
     rankingLoading: false,
     rankingError: "",
@@ -1171,7 +1133,6 @@ class Component extends DCLogic {
     this._carouselTimer = setInterval(() => {
       this.setState(s => ({ carouselIndex: (s.carouselIndex + 1) % CAROUSEL_IMAGES.length }));
     }, 5000);
-    this.restoreSession();
   }
 
   componentWillUnmount() {
@@ -1270,168 +1231,19 @@ class Component extends DCLogic {
     this.setState({ submitted: false, form: emptyForm(), codigoGenerado: "" });
   };
 
-  // ===================== Sesión (un solo ingreso para todos los roles) =====================
-
-  api = (payload) => {
-    const body = { ...payload, token: payload.token || this.state.sessionToken || "" };
-    return fetch(INSCRIPCIONES_ENDPOINT, {
-      method: "POST",
-      mode: "cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(body)
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.sessionExpired && payload.action !== "session") {
-          this.expireSession();
-        }
-        return data || {};
-      });
-  };
-
-  saveStoredSession = (token, page) => {
-    try { localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ token, page: page || "" })); } catch (e) {}
-  };
-
-  readStoredSession = () => {
-    try {
-      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
-  };
-
-  clearStoredSession = () => {
-    try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch (e) {}
-  };
-
-  restoreSession = () => {
-    const saved = this.readStoredSession();
-    if (!saved || !saved.token) return;
-    this.setState({ sessionRestoring: true });
-    this.api({ action: "session", token: saved.token })
-      .then(data => {
-        if (data.result === "ok") {
-          this.applySession({ ...data, token: saved.token }, saved.page);
-        } else {
-          this.clearStoredSession();
-          this.setState({ sessionRestoring: false });
-        }
-      })
-      .catch(() => this.setState({ sessionRestoring: false }));
-  };
-
-  // s = { token, user, role, mustChangePassword }. page: "admin" | "fichas" | "" (vacío = según el rol)
-  applySession = (s, page) => {
-    const isStaff = s.role === "admin" || s.role === "moderador";
-    this.setState({
-      sessionToken: s.token,
-      sessionUser: s.user || "",
-      sessionRole: s.role,
-      sessionRestoring: false,
-      adminRole: s.role,
-      fichaRole: s.role,
-      adminLoggedIn: isStaff,
-      fichaLoggedIn: true,
-      mustChangePassword: !!s.mustChangePassword,
-      modPassNew: "", modPassNew2: "", modPassError: "",
-      loginPass: "", loginError: "", loginInfo: "", loginBusy: false
-    });
-    let target = page;
-    if (target !== "admin" && target !== "fichas" && target !== "landing") target = isStaff ? "admin" : "fichas";
-    if (target === "admin" && !isStaff) target = "fichas";
-    if (target === "admin") this.goToAdmin();
-    else if (target === "fichas") this.goToFichas();
-    else this.saveStoredSession(s.token, "landing");
-  };
-
-  resetSessionState = (extra) => {
-    this.clearStoredSession();
-    this.setState({
-      sessionToken: "", sessionUser: "", sessionRole: "",
-      adminLoggedIn: false, adminRole: "", adminView: "solicitudes",
-      fichaLoggedIn: false, fichaRole: "", fichaView: "mi",
-      inscripciones: [], moderadores: [], modEmailEdits: {}, modEmailMsg: "",
-      ficha: null, rankingList: [],
-      mustChangePassword: false, modPassNew: "", modPassNew2: "", modPassError: "",
-      pwdActual: "", pwdNueva: "", pwdNueva2: "", pwdError: "", pwdOk: false,
-      credNewUser: "", credNewPass: "", credNewPass2: "", credError: "",
-      ...(extra || {})
-    });
-  };
-
-  expireSession = () => {
-    if (!this.state.sessionToken) return;
-    this.resetSessionState({
-      page: "login", forgotMode: false, fichaRegisterMode: false,
-      loginInfo: "", loginError: "Tu sesión venció. Ingresá de nuevo."
-    });
-  };
-
-  logout = () => {
-    const token = this.state.sessionToken;
-    if (token) this.api({ action: "logout", token }).catch(() => {});
-    this.resetSessionState({ page: "landing", loginUser: "", loginPass: "", loginError: "", loginInfo: "" });
-  };
-
-  goToLogin = () => {
-    this.setState({
-      page: "login", forgotMode: false, fichaRegisterMode: false,
-      loginError: "", loginInfo: "", loginPass: ""
-    });
-  };
-
-  onNavAccount = () => {
-    if (!this.state.sessionToken) { this.goToLogin(); return; }
-    if (this.state.adminLoggedIn) this.goToAdmin();
-    else this.goToFichas();
-  };
-
-  goToAdmin = () => {
-    if (!this.state.adminLoggedIn) { this.goToLogin(); return; }
-    this.setState({ page: "admin" });
-    this.saveStoredSession(this.state.sessionToken, "admin");
-    if (!this.state.mustChangePassword && (this.state.adminView !== "usuarios")) this.loadInscripciones();
-  };
-
-  goToLanding = () => {
-    this.setState({ page: "landing", loginPass: "", loginError: "" });
-    if (this.state.sessionToken) this.saveStoredSession(this.state.sessionToken, "landing");
-  };
-
+  goToAdmin = () => this.setState({ page: "admin" });
+  goToLanding = () => this.setState({ page: "landing", adminUser: "", adminPass: "", adminError: "" });
   goToReglamento = () => this.setState({ page: "reglamento" });
 
-  onLoginFieldChange = (e) => {
+  onAdminFieldChange = (e) => {
     const { name, value } = e.target;
-    this.setState({ [name]: value, loginError: "", loginInfo: "" });
+    this.setState({ [name]: value, adminError: "" });
   };
-
-  onLogin = (e) => {
-    e.preventDefault();
-    const user = this.state.loginUser.trim();
-    const pass = this.state.loginPass;
-    if (!user || !pass) return;
-    this.setState({ loginBusy: true, loginError: "", loginInfo: "" });
-    this.api({ action: "login", user, pass })
-      .then(data => {
-        if (data.result === "ok" && data.token) {
-          this.applySession(data, "");
-        } else {
-          this.setState({ loginBusy: false, loginError: data.message || "Usuario o contraseña incorrectos." });
-        }
-      })
-      .catch(() => {
-        this.setState({ loginBusy: false, loginError: "No se pudo conectar con el servidor. Probá de nuevo." });
-      });
-  };
-
-  // ===================== Recuperar contraseña (todos los roles) =====================
 
   onForgotClick = () => {
     this.setState({
-      forgotMode: true, fichaRegisterMode: false, resetRequestSent: false, resetError: "", resetInfo: "",
-      resetUser: this.state.loginUser, resetCode: "", resetNewPass: "", resetNewPass2: ""
+      forgotMode: true, resetRequestSent: false, resetError: "",
+      resetCode: "", resetNewPass: "", resetNewPass2: ""
     });
   };
 
@@ -1448,20 +1260,18 @@ class Component extends DCLogic {
   };
 
   onRequestResetCode = (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    const user = (this.state.resetUser || "").trim();
-    if (!user) {
-      this.setState({ resetError: "Ingresá tu usuario." });
-      return;
-    }
+    e.preventDefault();
     this.setState({ resetRequesting: true, resetError: "" });
-    this.api({ action: "requestPasswordReset", user })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "requestAdminPasswordReset" })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
-          this.setState({
-            resetRequesting: false, resetRequestSent: true, resetError: "",
-            resetInfo: data.message || "Si el usuario existe y tiene un email registrado, te enviamos un código."
-          });
+          this.setState({ resetRequesting: false, resetRequestSent: true, resetError: "" });
         } else {
           this.setState({ resetRequesting: false, resetError: data.message || "No se pudo enviar el código." });
         }
@@ -1473,7 +1283,7 @@ class Component extends DCLogic {
 
   onConfirmReset = (e) => {
     e.preventDefault();
-    const { resetUser, resetCode, resetNewPass, resetNewPass2 } = this.state;
+    const { resetCode, resetNewPass, resetNewPass2 } = this.state;
     if (!resetCode || !resetCode.trim()) {
       this.setState({ resetError: "Ingresá el código que recibiste por email." });
       return;
@@ -1487,14 +1297,20 @@ class Component extends DCLogic {
       return;
     }
     this.setState({ resetConfirming: true, resetError: "" });
-    this.api({ action: "confirmPasswordReset", user: resetUser.trim(), code: resetCode.trim(), newPass: resetNewPass })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "confirmAdminPasswordReset", code: resetCode.trim(), newPass: resetNewPass })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState({
             resetConfirming: false, forgotMode: false, resetRequestSent: false,
             resetCode: "", resetNewPass: "", resetNewPass2: "", resetError: "",
-            loginUser: resetUser.trim(), loginPass: "", loginError: "",
-            loginInfo: "Contraseña actualizada. Ingresá con tu contraseña nueva."
+            adminUser: "", adminPass: "",
+            adminError: "Contraseña actualizada. Iniciá sesión con tu contraseña nueva."
           });
         } else {
           this.setState({ resetConfirming: false, resetError: data.message || "No se pudo actualizar la contraseña." });
@@ -1505,11 +1321,48 @@ class Component extends DCLogic {
       });
   };
 
-  // ===================== Panel admin =====================
+  onAdminLogin = (e) => {
+    e.preventDefault();
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
+    this.setState({ adminError: "Verificando..." });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "adminLogin", user, pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            adminLoggedIn: true,
+            adminRole: data.role || "admin",
+            adminError: "",
+            mustChangePassword: !!data.mustChangePassword,
+            modPassNew: "",
+            modPassNew2: "",
+            modPassError: ""
+          });
+          this.loadInscripciones(user, pass);
+        } else {
+          this.setState({ adminError: "Usuario o contraseña incorrectos." });
+        }
+      })
+      .catch(() => {
+        this.setState({ adminError: "No se pudo verificar. Probá de nuevo." });
+      });
+  };
 
-  loadInscripciones = () => {
+  loadInscripciones = (user, pass) => {
     this.setState({ adminDataLoading: true, adminDataError: "" });
-    this.api({ action: "list" })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "list", user, pass })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok" && Array.isArray(data.rows)) {
           const mapped = data.rows.map(r => ({
@@ -1535,7 +1388,7 @@ class Component extends DCLogic {
           })).reverse();
           this.setState({ inscripciones: mapped, adminDataLoading: false });
         } else {
-          this.setState({ adminDataLoading: false, adminDataError: data.message || "No se pudieron cargar las inscripciones." });
+          this.setState({ adminDataLoading: false, adminDataError: "No se pudieron cargar las inscripciones." });
         }
       })
       .catch(() => {
@@ -1543,25 +1396,41 @@ class Component extends DCLogic {
       });
   };
 
+  adminLogout = () => {
+    this.setState({
+      adminLoggedIn: false, adminUser: "", adminPass: "", adminRole: "", adminView: "solicitudes",
+      page: "landing", inscripciones: [], moderadores: [],
+      mustChangePassword: false, modPassNew: "", modPassNew2: "", modPassError: ""
+    });
+  };
+
   goToUsuarios = () => {
     this.setState({ adminView: "usuarios" });
     this.loadModeradores();
   };
 
-  goToSolicitudes = () => {
-    this.setState({ adminView: "solicitudes" });
-    this.loadInscripciones();
-  };
+  goToSolicitudes = () => this.setState({ adminView: "solicitudes" });
 
   loadModeradores = () => {
     this.setState({ moderadoresLoading: true, moderadoresError: "" });
-    this.api({ action: "listModerators" })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "listModerators", user: this.state.adminUser, pass: this.state.adminPass })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
-          const list = data.moderadores || [];
-          const edits = {};
-          list.forEach(m => { edits[m.user] = m.email || ""; });
-          this.setState({ moderadores: list, modEmailEdits: edits, moderadoresLoading: false });
+          this.setState({ moderadores: data.moderadores || [], moderadoresLoading: false });
+        } else if (data.message === "No autorizado") {
+          this.setState({
+            adminLoggedIn: false, adminUser: "", adminPass: "", adminRole: "", adminView: "solicitudes",
+            page: "admin", inscripciones: [], moderadores: [],
+            mustChangePassword: false, modPassNew: "", modPassNew2: "", modPassError: "",
+            moderadoresLoading: false, moderadoresError: "",
+            adminError: "Tu sesión ya no es válida. Iniciá sesión de nuevo."
+          });
         } else {
           this.setState({ moderadoresLoading: false, moderadoresError: data.message || "No se pudieron cargar los usuarios." });
         }
@@ -1571,30 +1440,9 @@ class Component extends DCLogic {
       });
   };
 
-  onModEmailChange = (user, value) => {
-    this.setState(s => ({ modEmailEdits: { ...s.modEmailEdits, [user]: value }, modEmailMsg: "" }));
-  };
-
-  onModEmailSave = (user) => {
-    const email = (this.state.modEmailEdits[user] || "").trim();
-    this.setState({ modEmailSavingUser: user, modEmailMsg: "" });
-    this.api({ action: "setModeratorEmail", targetUser: user, email })
-      .then(data => {
-        if (data.result === "ok") {
-          this.setState({ modEmailSavingUser: "", modEmailMsg: "Email de " + user + " guardado." });
-          this.loadModeradores();
-        } else {
-          this.setState({ modEmailSavingUser: "", modEmailMsg: data.message || "No se pudo guardar el email." });
-        }
-      })
-      .catch(() => {
-        this.setState({ modEmailSavingUser: "", modEmailMsg: "No se pudo conectar con el servidor." });
-      });
-  };
-
   onCredFieldChange = (e) => {
     const { name, value } = e.target;
-    this.setState({ [name]: value, credError: "", credOk: false });
+    this.setState({ [name]: value, credError: "" });
   };
 
   onChangeCredentials = (e) => {
@@ -1613,15 +1461,27 @@ class Component extends DCLogic {
       return;
     }
     this.setState({ credSaving: true, credError: "" });
-    this.api({ action: "changeCredentials", newUser: credNewUser.trim(), newPass: credNewPass })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "changeCredentials",
+        user: this.state.adminUser,
+        pass: this.state.adminPass,
+        newUser: credNewUser.trim(),
+        newPass: credNewPass
+      })
+    })
+      .then(res => res.json())
       .then(data => {
-        if (data.result === "ok" && data.token) {
+        if (data.result === "ok") {
           this.setState({
-            credSaving: false, sessionToken: data.token, sessionUser: credNewUser.trim(),
+            credSaving: false, adminLoggedIn: false, adminRole: "", adminUser: "", adminPass: "",
+            adminView: "solicitudes", inscripciones: [], moderadores: [],
             credNewUser: "", credNewPass: "", credNewPass2: "",
-            credError: "", credOk: true
+            adminError: "Credenciales actualizadas. Iniciá sesión de nuevo con tus datos nuevos."
           });
-          this.saveStoredSession(data.token, "admin");
         } else {
           this.setState({ credSaving: false, credError: data.message || "No se pudieron actualizar las credenciales." });
         }
@@ -1648,15 +1508,28 @@ class Component extends DCLogic {
       return;
     }
     this.setState({ modPassSaving: true, modPassError: "" });
-    this.api({ action: "changeModeratorPassword", newPass: modPassNew })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "changeModeratorPassword",
+        user: this.state.adminUser,
+        pass: this.state.adminPass,
+        newPass: modPassNew
+      })
+    })
+      .then(res => res.json())
       .then(data => {
-        if (data.result === "ok" && data.token) {
+        if (data.result === "ok") {
           this.setState({
-            modPassSaving: false, mustChangePassword: false, sessionToken: data.token,
-            modPassNew: "", modPassNew2: "", modPassError: ""
+            modPassSaving: false,
+            mustChangePassword: false,
+            adminPass: modPassNew,
+            modPassNew: "",
+            modPassNew2: "",
+            modPassError: ""
           });
-          this.saveStoredSession(data.token, "admin");
-          this.loadInscripciones();
         } else {
           this.setState({ modPassSaving: false, modPassError: data.message || "No se pudo actualizar la contraseña." });
         }
@@ -1673,7 +1546,7 @@ class Component extends DCLogic {
 
   onCreateModerator = (e) => {
     e.preventDefault();
-    const { newModUser, newModPass, newModEmail } = this.state;
+    const { newModUser, newModPass } = this.state;
     if (!newModUser || newModUser.trim().length < 3) {
       this.setState({ modCreateError: "El usuario debe tener al menos 3 caracteres." });
       return;
@@ -1683,10 +1556,22 @@ class Component extends DCLogic {
       return;
     }
     this.setState({ modCreating: true, modCreateError: "" });
-    this.api({ action: "createModerator", newModUser: newModUser.trim(), newModPass, newModEmail: (newModEmail || "").trim() })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "createModerator",
+        user: this.state.adminUser,
+        pass: this.state.adminPass,
+        newModUser: newModUser.trim(),
+        newModPass
+      })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
-          this.setState({ modCreating: false, newModUser: "", newModPass: "", newModEmail: "" });
+          this.setState({ modCreating: false, newModUser: "", newModPass: "" });
           this.loadModeradores();
         } else {
           this.setState({ modCreating: false, modCreateError: data.message || "No se pudo crear el usuario." });
@@ -1699,7 +1584,13 @@ class Component extends DCLogic {
 
   onDeleteModerator = (targetUser) => {
     this.setState({ modDeletingUser: targetUser, modDeleteError: "" });
-    this.api({ action: "deleteModerator", targetUser })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "deleteModerator", user: this.state.adminUser, pass: this.state.adminPass, targetUser })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState({ modDeletingUser: "" });
@@ -1722,8 +1613,16 @@ class Component extends DCLogic {
   };
 
   onDeleteConfirm = (id) => {
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
     this.setState({ deletingId: id, deleteError: "" });
-    this.api({ action: "delete", id })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "delete", user, pass, id })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState(s => ({
@@ -1741,8 +1640,16 @@ class Component extends DCLogic {
   };
 
   setEstado = (id, estado) => {
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
     this.setState({ estadoUpdatingId: id, estadoError: "" });
-    this.api({ action: "setEstado", id, estado })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "setEstado", user, pass, id, estado })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState(s => ({
@@ -1758,7 +1665,7 @@ class Component extends DCLogic {
           }));
         } else {
           this.setState({ estadoUpdatingId: "", estadoError: data.message || "No se pudo actualizar el estado." });
-          if (this.state.sessionToken) this.loadInscripciones();
+          this.loadInscripciones(user, pass);
         }
       })
       .catch(() => {
@@ -1770,8 +1677,16 @@ class Component extends DCLogic {
   onRechazar = (id) => this.setEstado(id, "Rechazado");
 
   revertirEstado = (id) => {
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
     this.setState({ revertingId: id, revertError: "" });
-    this.api({ action: "revertirEstado", id })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "revertirEstado", user, pass, id })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           const estado = data.estado || "Pendiente";
@@ -1787,7 +1702,7 @@ class Component extends DCLogic {
             } : r)
           }));
         } else {
-          this.setState({ revertingId: "", revertError: data.message || "No se pudo revertir esa acción." });
+          this.setState({ revertingId: "", revertError: (data && data.message) || "No se pudo revertir esa acción." });
         }
       })
       .catch(() => {
@@ -1795,16 +1710,89 @@ class Component extends DCLogic {
       });
   };
 
-  // ===================== Fichas =====================
-
   goToFichas = () => {
-    if (!this.state.fichaLoggedIn) { this.goToLogin(); return; }
     this.setState({ page: "fichas" });
-    this.saveStoredSession(this.state.sessionToken, "fichas");
-    this.goToMiFicha();
+    if (this.state.fichaLoggedIn) {
+      this.goToMiFicha();
+    }
   };
 
-  goToFichasFromAdmin = () => this.goToFichas();
+  goToFichasFromAdmin = () => {
+    this.setState({ page: "fichas" });
+    if (this.state.fichaLoggedIn) {
+      this.goToMiFicha();
+      return;
+    }
+    const user = this.state.adminUser;
+    const pass = this.state.adminPass;
+    this.setState({ fichaUser: user, fichaPass: pass, fichaLoginError: "Verificando..." });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "fichaLogin", user, pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            fichaLoggedIn: true,
+            fichaRole: data.role || "admin",
+            fichaLoginError: "",
+            fichaView: "mi"
+          });
+          this.loadMiFicha();
+        } else {
+          this.setState({ fichaLoginError: (data && data.message) || "No se pudo ingresar a tu ficha." });
+        }
+      })
+      .catch(() => {
+        this.setState({ fichaLoginError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  onFichaFieldChange = (e) => {
+    const { name, value } = e.target;
+    this.setState({ [name]: value, fichaLoginError: "" });
+  };
+
+  onFichaLogin = (e) => {
+    e.preventDefault();
+    const user = this.state.fichaUser;
+    const pass = this.state.fichaPass;
+    this.setState({ fichaLoginError: "Verificando..." });
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "fichaLogin", user, pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "ok") {
+          this.setState({
+            fichaLoggedIn: true,
+            fichaRole: data.role || "miembro",
+            fichaLoginError: "",
+            fichaView: "mi"
+          });
+          this.loadMiFicha();
+        } else {
+          this.setState({ fichaLoginError: (data && data.message) || "Usuario o contraseña incorrectos." });
+        }
+      })
+      .catch(() => {
+        this.setState({ fichaLoginError: "No se pudo conectar con el servidor." });
+      });
+  };
+
+  fichaLogout = () => {
+    this.setState({
+      fichaLoggedIn: false, fichaUser: "", fichaPass: "", fichaRole: "",
+      fichaLoginError: "", fichaView: "mi", fichaRegisterMode: false,
+      ficha: null, rankingList: []
+    });
+  };
 
   goToMiFicha = () => {
     this.setState({ fichaView: "mi" });
@@ -1818,10 +1806,16 @@ class Component extends DCLogic {
 
   loadMiFicha = () => {
     this.setState({ fichaLoading: true, fichaLoadError: "" });
-    this.api({ action: "getMiFicha" })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "getMiFicha", user: this.state.fichaUser, pass: this.state.fichaPass })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok" && data.ficha) {
-          this.setState({
+          this.setState(s => ({
             ficha: data.ficha,
             fichaLoading: false,
             editCallsign: data.ficha.callsign || "",
@@ -1829,9 +1823,9 @@ class Component extends DCLogic {
             editFotoBase64: "",
             editFotoError: "",
             editFichaOk: false
-          });
+          }));
         } else {
-          this.setState({ fichaLoading: false, fichaLoadError: data.message || "No se pudo cargar tu ficha." });
+          this.setState({ fichaLoading: false, fichaLoadError: (data && data.message) || "No se pudo cargar tu ficha." });
         }
       })
       .catch(() => {
@@ -1851,7 +1845,13 @@ class Component extends DCLogic {
       return;
     }
     this.setState({ bajasSaving: true, bajasError: "", bajasOk: false });
-    this.api({ action: "sumarBajas", cantidad })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "sumarBajas", user: this.state.fichaUser, pass: this.state.fichaPass, cantidad })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState(s => ({
@@ -1859,7 +1859,7 @@ class Component extends DCLogic {
             ficha: s.ficha ? { ...s.ficha, bajasTotales: data.bajasTotales } : s.ficha
           }));
         } else {
-          this.setState({ bajasSaving: false, bajasError: data.message || "No se pudieron sumar las bajas." });
+          this.setState({ bajasSaving: false, bajasError: (data && data.message) || "No se pudieron sumar las bajas." });
         }
       })
       .catch(() => {
@@ -1884,18 +1884,26 @@ class Component extends DCLogic {
   onGuardarFicha = (e) => {
     e.preventDefault();
     this.setState({ editFichaSaving: true, editFichaError: "", editFichaOk: false });
-    this.api({
-      action: "completarFicha",
-      callsign: this.state.editCallsign,
-      nombre: this.state.editNombre,
-      fotoBase64: this.state.editFotoBase64
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "completarFicha",
+        user: this.state.fichaUser,
+        pass: this.state.fichaPass,
+        callsign: this.state.editCallsign,
+        nombre: this.state.editNombre,
+        fotoBase64: this.state.editFotoBase64
+      })
     })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState({ editFichaSaving: false, editFichaOk: true, editFichaError: "" });
           this.loadMiFicha();
         } else {
-          this.setState({ editFichaSaving: false, editFichaError: data.message || "No se pudo actualizar la ficha." });
+          this.setState({ editFichaSaving: false, editFichaError: (data && data.message) || "No se pudo actualizar la ficha." });
         }
       })
       .catch(() => {
@@ -1903,52 +1911,20 @@ class Component extends DCLogic {
       });
   };
 
-  onPwdFieldChange = (e) => {
-    const { name, value } = e.target;
-    this.setState({ [name]: value, pwdError: "", pwdOk: false });
-  };
-
-  onChangePassword = (e) => {
-    e.preventDefault();
-    const { pwdActual, pwdNueva, pwdNueva2 } = this.state;
-    if (!pwdActual) {
-      this.setState({ pwdError: "Ingresá tu contraseña actual." });
-      return;
-    }
-    if (!pwdNueva || pwdNueva.length < 8) {
-      this.setState({ pwdError: "La contraseña nueva debe tener al menos 8 caracteres." });
-      return;
-    }
-    if (pwdNueva !== pwdNueva2) {
-      this.setState({ pwdError: "Las contraseñas nuevas no coinciden." });
-      return;
-    }
-    this.setState({ pwdSaving: true, pwdError: "", pwdOk: false });
-    this.api({ action: "changePassword", currentPass: pwdActual, newPass: pwdNueva })
-      .then(data => {
-        if (data.result === "ok" && data.token) {
-          this.setState({
-            pwdSaving: false, pwdOk: true, sessionToken: data.token,
-            pwdActual: "", pwdNueva: "", pwdNueva2: ""
-          });
-          this.saveStoredSession(data.token, "fichas");
-        } else {
-          this.setState({ pwdSaving: false, pwdError: data.message || "No se pudo cambiar la contraseña." });
-        }
-      })
-      .catch(() => {
-        this.setState({ pwdSaving: false, pwdError: "No se pudo conectar con el servidor." });
-      });
-  };
-
   loadRanking = () => {
     this.setState({ rankingLoading: true, rankingError: "" });
-    this.api({ action: "listFichas" })
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "listFichas", user: this.state.fichaUser, pass: this.state.fichaPass })
+    })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok" && Array.isArray(data.fichas)) {
           this.setState({ rankingList: data.fichas, rankingLoading: false });
         } else {
-          this.setState({ rankingLoading: false, rankingError: data.message || "No se pudo cargar el ranking." });
+          this.setState({ rankingLoading: false, rankingError: (data && data.message) || "No se pudo cargar el ranking." });
         }
       })
       .catch(() => {
@@ -1956,11 +1932,9 @@ class Component extends DCLogic {
       });
   };
 
-  // ===================== Alta de usuario de miembro =====================
-
   onGoToRegisterMode = () => {
     this.setState({
-      fichaRegisterMode: true, forgotMode: false, loginError: "", loginInfo: "",
+      fichaRegisterMode: true, fichaLoginError: "",
       regDni: "", regCodigo: "", regUsuario: "", regPass: "", regPass2: "",
       regCallsign: "", regFotoBase64: "", regFotoError: "", regError: ""
     });
@@ -2008,27 +1982,32 @@ class Component extends DCLogic {
       return;
     }
     this.setState({ regSaving: true, regError: "" });
-    this.api({
-      action: "crearFichaMiembro",
-      dni: regDni.trim(),
-      codigo: regCodigo.trim(),
-      usuario: regUsuario.trim(),
-      pass: regPass,
-      callsign: this.state.regCallsign.trim(),
-      fotoBase64: regFotoBase64
+    fetch(INSCRIPCIONES_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "crearFichaMiembro",
+        dni: regDni.trim(),
+        codigo: regCodigo.trim(),
+        usuario: regUsuario.trim(),
+        pass: regPass,
+        callsign: this.state.regCallsign.trim(),
+        fotoBase64: regFotoBase64
+      })
     })
+      .then(res => res.json())
       .then(data => {
         if (data.result === "ok") {
           this.setState({
             regSaving: false, fichaRegisterMode: false,
-            regDni: "", regCodigo: "", regPass: "", regPass2: "",
+            regDni: "", regCodigo: "", regUsuario: "", regPass: "", regPass2: "",
             regCallsign: "", regFotoBase64: "", regFotoError: "", regError: "",
-            loginUser: regUsuario.trim(), loginPass: "", loginError: "",
-            loginInfo: "Usuario creado con éxito. Ingresá con tu contraseña.",
-            regUsuario: ""
+            fichaUser: "", fichaPass: "",
+            fichaLoginError: "Usuario creado con éxito. Iniciá sesión con tus datos nuevos."
           });
         } else {
-          this.setState({ regSaving: false, regError: data.message || "No se pudo crear el usuario." });
+          this.setState({ regSaving: false, regError: (data && data.message) || "No se pudo crear el usuario." });
         }
       })
       .catch(() => {
@@ -2049,11 +2028,7 @@ class Component extends DCLogic {
       user: mod.user,
       creadoFecha: formatFecha(mod.creado),
       deleting: this.state.modDeletingUser === mod.user,
-      onDeleteClick: () => this.onDeleteModerator(mod.user),
-      emailEdit: this.state.modEmailEdits[mod.user] !== undefined ? this.state.modEmailEdits[mod.user] : (mod.email || ""),
-      onEmailChange: (e) => this.onModEmailChange(mod.user, e.target.value),
-      onEmailSave: () => this.onModEmailSave(mod.user),
-      savingEmail: this.state.modEmailSavingUser === mod.user
+      onDeleteClick: () => this.onDeleteModerator(mod.user)
     }));
 
     const carouselSlides = CAROUSEL_IMAGES.map((img, i) => ({
@@ -2112,39 +2087,20 @@ class Component extends DCLogic {
     });
 
     return {
-      isAdmin: this.state.page === "admin" && this.state.adminLoggedIn,
-      isLogin: this.state.page === "login" || (this.state.page === "admin" && !this.state.adminLoggedIn) || (this.state.page === "fichas" && !this.state.fichaLoggedIn),
-      loginModeLogin: !this.state.forgotMode && !this.state.fichaRegisterMode,
-      loginUser: this.state.loginUser,
-      loginPass: this.state.loginPass,
-      loginError: this.state.loginError,
-      loginInfo: this.state.loginInfo,
-      loginBusy: this.state.loginBusy,
-      loginButtonLabel: this.state.loginBusy ? "Verificando..." : "Ingresar",
-      onLoginFieldChange: this.onLoginFieldChange,
-      onLogin: this.onLogin,
-      logout: this.logout,
-      onNavAccount: this.onNavAccount,
-      navAccountLabel: this.state.sessionToken ? "Mi cuenta" : (this.state.sessionRestoring ? "Ingresando..." : "Ingresar"),
-      resetUser: this.state.resetUser,
-      resetInfo: this.state.resetInfo,
-      pwdActual: this.state.pwdActual,
-      pwdNueva: this.state.pwdNueva,
-      pwdNueva2: this.state.pwdNueva2,
-      pwdSaving: this.state.pwdSaving,
-      pwdError: this.state.pwdError,
-      pwdOk: this.state.pwdOk,
-      onPwdFieldChange: this.onPwdFieldChange,
-      onChangePassword: this.onChangePassword,
-      newModEmail: this.state.newModEmail,
-      modEmailMsg: this.state.modEmailMsg,
-      fichaIsStaff: this.state.adminLoggedIn,
+      isAdmin: this.state.page === "admin",
       isLanding: this.state.page === "landing",
       isReglamento: this.state.page === "reglamento",
       goToAdmin: this.goToAdmin,
       goToLanding: this.goToLanding,
       goToReglamento: this.goToReglamento,
       adminLoggedIn: this.state.adminLoggedIn,
+      notAdminLoggedIn: !this.state.adminLoggedIn,
+      adminUser: this.state.adminUser,
+      adminPass: this.state.adminPass,
+      adminError: this.state.adminError,
+      onAdminFieldChange: this.onAdminFieldChange,
+      onAdminLogin: this.onAdminLogin,
+      adminLogout: this.adminLogout,
       forgotMode: this.state.forgotMode,
       notForgotMode: !this.state.forgotMode,
       resetRequestSent: this.state.resetRequestSent,
@@ -2180,7 +2136,6 @@ class Component extends DCLogic {
       onChangeCredentials: this.onChangeCredentials,
       credSaving: this.state.credSaving,
       credError: this.state.credError,
-      credOk: this.state.credOk,
       moderadoresLoading: this.state.moderadoresLoading,
       moderadoresError: this.state.moderadoresError,
       hasModeradores: moderadoresView.length > 0,
@@ -2225,13 +2180,15 @@ class Component extends DCLogic {
       totalMiembros,
       totalEventos,
 
-      isFichas: this.state.page === "fichas" && this.state.fichaLoggedIn,
+      isFichas: this.state.page === "fichas",
       goToFichas: this.goToFichas,
       goToFichasFromAdmin: this.goToFichasFromAdmin,
       fichaLoggedIn: this.state.fichaLoggedIn,
+      notFichaLoggedIn: !this.state.fichaLoggedIn,
       fichaCanVerRanking: this.state.fichaRole === "admin" || this.state.fichaRole === "moderador",
       goToMiFicha: this.goToMiFicha,
       goToRanking: this.goToRanking,
+      fichaLogout: this.fichaLogout,
       fichaViewMi: this.state.fichaView !== "ranking",
       fichaViewRanking: this.state.fichaView === "ranking",
       fichaLoading: this.state.fichaLoading,
@@ -2256,6 +2213,11 @@ class Component extends DCLogic {
       rankingLoading: this.state.rankingLoading,
       rankingError: this.state.rankingError,
       rankingView,
+      fichaUser: this.state.fichaUser,
+      fichaPass: this.state.fichaPass,
+      onFichaFieldChange: this.onFichaFieldChange,
+      onFichaLogin: this.onFichaLogin,
+      fichaLoginError: this.state.fichaLoginError,
       onGoToRegisterMode: this.onGoToRegisterMode,
       onBackToFichaLogin: this.onBackToFichaLogin,
       fichaRegisterMode: this.state.fichaRegisterMode,
