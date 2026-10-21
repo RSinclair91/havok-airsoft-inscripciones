@@ -493,7 +493,7 @@
       <div>
         <div class="card-kicker">{{ ficha.rolLabel }}</div>
         <h2 style="margin:var(--space-1) 0;">{{ ficha.callsign }}</h2>
-        <div class="text-muted" style="font-size:13px;">{{ ficha.nombre }} · Grado: {{ ficha.grado }}</div>
+        <div class="text-muted" style="font-size:13px;">{{ ficha.nombre }}</div>
       </div>
     </div>
 
@@ -501,22 +501,6 @@
       <div class="havok-ficha-stat">
         <div class="valor">{{ ficha.bajasTotales }}</div>
         <div class="etiqueta">Bajas totales</div>
-      </div>
-      <div class="havok-ficha-stat">
-        <sc-if value="{{ puedeEditarMiGrado }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;gap:6px;align-items:center;justify-content:center;">
-            <select class="input" style="padding:4px 8px;font-size:13px;" onChange="{{ onMiGradoChange }}">
-              <sc-for list="{{ gradosOpciones }}" as="g" hint-placeholder-count="3">
-                <option value="{{ g }}" selected="{{ g === miGradoActual }}">{{ g }}</option>
-              </sc-for>
-            </select>
-            <button class="btn btn-secondary" style="padding:4px 8px;font-size:11.5px;" onClick="{{ onGuardarMiGrado }}" disabled="{{ miGradoSaving }}">Guardar</button>
-          </div>
-        </sc-if>
-        <sc-if value="{{ noPuedeEditarMiGrado }}" hint-placeholder-val="{{ true }}">
-          <div class="valor">{{ ficha.grado }}</div>
-        </sc-if>
-        <div class="etiqueta">Grado</div>
       </div>
       <div class="havok-ficha-stat">
         <div class="valor">{{ ficha.fechaCreadoLabel }}</div>
@@ -581,9 +565,6 @@
     <sc-if value="{{ rankingError }}" hint-placeholder-val="{{ false }}">
       <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ rankingError }}</div>
     </sc-if>
-    <sc-if value="{{ gradoError }}" hint-placeholder-val="{{ false }}">
-      <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;margin-bottom:var(--space-3);">{{ gradoError }}</div>
-    </sc-if>
     <div class="card elev-sm" style="padding:var(--space-4);">
       <sc-for list="{{ rankingView }}" as="row" hint-placeholder-count="3">
         <div class="havok-ranking-row">
@@ -599,22 +580,6 @@
           <div style="flex:1;">
             <div style="font-weight:600;">{{ row.callsign }}</div>
             <div style="font-size:11.5px;color:var(--color-neutral-500);">{{ row.nombre }}</div>
-          </div>
-          <div style="text-align:center;min-width:110px;">
-            <sc-if value="{{ row.canEditGrado }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;gap:6px;align-items:center;justify-content:center;">
-                <select class="input" style="padding:4px 8px;font-size:12px;" onChange="{{ row.onGradoSelectChange }}">
-                  <sc-for list="{{ gradosOpciones }}" as="g" hint-placeholder-count="5">
-                    <option value="{{ g }}" selected="{{ g === row.grado }}">{{ g }}</option>
-                  </sc-for>
-                </select>
-                <button class="btn btn-secondary" style="padding:4px 8px;font-size:11.5px;" onClick="{{ row.onGuardarGradoClick }}" disabled="{{ row.savingGrado }}">Guardar</button>
-              </div>
-            </sc-if>
-            <sc-if value="{{ row.noPuedeEditarGrado }}" hint-placeholder-val="{{ true }}">
-              <div style="font-weight:600;font-size:13px;">{{ row.grado }}</div>
-              <div style="font-size:10.5px;color:var(--color-neutral-500);">Grado</div>
-            </sc-if>
           </div>
           <div style="text-align:right;">
             <div style="font-family:var(--font-heading);font-weight:700;font-size:18px;">{{ row.bajasTotales }}</div>
@@ -1041,7 +1006,6 @@ const emptyForm = () => ({
 });
 
 const ROL_LABELS = { admin: "Admin", moderador: "Moderador", miembro: "Miembro" };
-const GRADOS_DISPONIBLES = ["Comandante", "Tropa", "Recluta"];
 
 function resizeImageFile(file, maxSize, quality) {
   return new Promise((resolve, reject) => {
@@ -1153,9 +1117,6 @@ class Component extends DCLogic {
     rankingList: [],
     rankingLoading: false,
     rankingError: "",
-    gradoEdits: {},
-    gradoSavingUser: "",
-    gradoError: "",
     regDni: "",
     regCodigo: "",
     regUsuario: "",
@@ -1829,7 +1790,7 @@ class Component extends DCLogic {
     this.setState({
       fichaLoggedIn: false, fichaUser: "", fichaPass: "", fichaRole: "",
       fichaLoginError: "", fichaView: "mi", fichaRegisterMode: false,
-      ficha: null, rankingList: [], gradoEdits: {}
+      ficha: null, rankingList: []
     });
   };
 
@@ -1861,8 +1822,7 @@ class Component extends DCLogic {
             editNombre: data.ficha.nombre || "",
             editFotoBase64: "",
             editFotoError: "",
-            editFichaOk: false,
-            gradoEdits: { ...s.gradoEdits, [data.ficha.usuario]: data.ficha.grado }
+            editFichaOk: false
           }));
         } else {
           this.setState({ fichaLoading: false, fichaLoadError: (data && data.message) || "No se pudo cargar tu ficha." });
@@ -1962,9 +1922,7 @@ class Component extends DCLogic {
       .then(res => res.json())
       .then(data => {
         if (data.result === "ok" && Array.isArray(data.fichas)) {
-          const edits = {};
-          data.fichas.forEach(f => { edits[f.usuario] = f.grado; });
-          this.setState({ rankingList: data.fichas, rankingLoading: false, gradoEdits: edits });
+          this.setState({ rankingList: data.fichas, rankingLoading: false });
         } else {
           this.setState({ rankingLoading: false, rankingError: (data && data.message) || "No se pudo cargar el ranking." });
         }
@@ -1972,51 +1930,6 @@ class Component extends DCLogic {
       .catch(() => {
         this.setState({ rankingLoading: false, rankingError: "No se pudo conectar con el servidor." });
       });
-  };
-
-  onGradoEditChange = (usuario, grado) => {
-    this.setState(s => ({ gradoEdits: { ...s.gradoEdits, [usuario]: grado } }));
-  };
-
-  guardarGrado = (usuario) => {
-    const grado = this.state.gradoEdits[usuario];
-    if (!grado) return;
-    this.setState({ gradoSavingUser: usuario, gradoError: "" });
-    fetch(INSCRIPCIONES_ENDPOINT, {
-      method: "POST",
-      mode: "cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "setGrado",
-        user: this.state.fichaUser,
-        pass: this.state.fichaPass,
-        targetUsuario: usuario,
-        grado
-      })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.result === "ok") {
-          this.setState({ gradoSavingUser: "" });
-          if (usuario === this.state.fichaUser) {
-            this.loadMiFicha();
-          }
-          this.loadRanking();
-        } else {
-          this.setState({ gradoSavingUser: "", gradoError: (data && data.message) || "No se pudo guardar el grado." });
-        }
-      })
-      .catch(() => {
-        this.setState({ gradoSavingUser: "", gradoError: "No se pudo conectar con el servidor." });
-      });
-  };
-
-  onMiGradoChange = (e) => {
-    this.onGradoEditChange(this.state.fichaUser, e.target.value);
-  };
-
-  onGuardarMiGrado = () => {
-    this.guardarGrado(this.state.fichaUser);
   };
 
   onGoToRegisterMode = () => {
@@ -2160,23 +2073,16 @@ class Component extends DCLogic {
     } : {};
 
     const rankingView = this.state.rankingList.map((row, i) => {
-      const pending = this.state.gradoEdits[row.usuario];
       return {
         posicion: i + 1,
         usuario: row.usuario,
         callsign: row.callsign || row.nombre || row.usuario,
         nombre: row.nombre || row.usuario,
         rolLabel: ROL_LABELS[row.rol] || row.rol,
-        grado: pending !== undefined ? pending : row.grado,
         bajasTotales: row.bajasTotales,
         tieneFoto: !!row.fotoBase64,
         sinFoto: !row.fotoBase64,
-        fotoBase64: row.fotoBase64,
-        canEditGrado: this.state.fichaRole === "admin",
-        noPuedeEditarGrado: this.state.fichaRole !== "admin",
-        savingGrado: this.state.gradoSavingUser === row.usuario,
-        onGradoSelectChange: (e) => this.onGradoEditChange(row.usuario, e.target.value),
-        onGuardarGradoClick: () => this.guardarGrado(row.usuario)
+        fotoBase64: row.fotoBase64
       };
     });
 
@@ -2289,12 +2195,6 @@ class Component extends DCLogic {
       fichaLoadError: this.state.fichaLoadError,
       hasFicha: !!fichaRaw,
       ficha,
-      puedeEditarMiGrado: !!fichaRaw && this.state.fichaRole === "admin",
-      noPuedeEditarMiGrado: !fichaRaw || this.state.fichaRole !== "admin",
-      miGradoActual: this.state.gradoEdits[this.state.fichaUser] !== undefined ? this.state.gradoEdits[this.state.fichaUser] : (fichaRaw ? fichaRaw.grado : ""),
-      miGradoSaving: this.state.gradoSavingUser === this.state.fichaUser,
-      onMiGradoChange: this.onMiGradoChange,
-      onGuardarMiGrado: this.onGuardarMiGrado,
       bajasHoy: this.state.bajasHoy,
       onBajasHoyChange: this.onBajasHoyChange,
       onSumarBajas: this.onSumarBajas,
@@ -2312,9 +2212,7 @@ class Component extends DCLogic {
       editFichaSaving: this.state.editFichaSaving,
       rankingLoading: this.state.rankingLoading,
       rankingError: this.state.rankingError,
-      gradoError: this.state.gradoError,
       rankingView,
-      gradosOpciones: GRADOS_DISPONIBLES,
       fichaUser: this.state.fichaUser,
       fichaPass: this.state.fichaPass,
       onFichaFieldChange: this.onFichaFieldChange,
