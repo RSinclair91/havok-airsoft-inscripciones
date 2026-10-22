@@ -325,3 +325,10 @@ El bloqueo por intentos fallidos usaba un **único contador para todo el sitio**
 
 - Backend: 58 pruebas automatizadas ejecutando el `Code.gs` real contra una simulación de Apps Script (planilla, caché, propiedades y correo simulados): login de los tres roles, permisos, bloqueo por usuario, sesiones, invalidación al cambiar contraseña o eliminar un moderador, recuperación para cada rol, compatibilidad con el sitio anterior, antispam y numeración `HVK-2026-####`. También se reprodujo el bug del bloqueo con el código anterior.
 - Página: 28 pruebas con Playwright conectando la página real a ese backend simulado (ingreso, recarga manteniendo sesión, cambio y recuperación de contraseña, panel, moderadores, sesión vencida, alta de miembro), sin errores de JavaScript, en escritorio y celular.
+
+
+## Aviso de campos incompletos y teléfonos con "+" (octubre 2026)
+
+- **Formulario de inscripción**: si falta algún dato obligatorio, al tocar "Confirmar inscripción" aparece un mensaje con la lista de lo que falta (incluye email con formato inválido y, para menores, los datos del adulto responsable). Al cerrarlo (botón "Entendido", la ✕ o tocando afuera), los campos incompletos quedan marcados en rojo con un aviso debajo, y la página se desplaza al primero. Cada campo pierde el rojo apenas se completa. Se desactivó la validación nativa del navegador (`sc-camel-no-validate`) para que este mensaje la reemplace.
+- **`#ERROR!` en el panel**: Google Sheets toma como fórmula todo valor que empiece con `=`, `+`, `-` o `@` (por ejemplo un teléfono `+54 9 2966…`), y como no puede calcularla muestra `#ERROR!`. El backend ahora guarda esos datos como texto (`textoSeguro_`, agrega un apóstrofo que no se ve en la celda). Esto además evita que alguien meta fórmulas en la planilla desde el formulario.
+- **Panel admin**: si una celda tiene un error de la planilla se muestra "⚠ dato ilegible (revisar planilla)" en vez del código de error, y ya no aparecen paréntesis vacíos `()` cuando no hay relación del contacto de emergencia.

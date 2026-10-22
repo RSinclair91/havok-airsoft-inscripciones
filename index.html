@@ -153,6 +153,19 @@
   @media (max-width: 720px) {
     .havok-ficha-header { flex-direction: column; text-align: center; }
   }
+  /* Campos incompletos del formulario de inscripción */
+  .havok-field-error > label { color: #e07b68; }
+  .havok-field-error .input { border-color: #c96a5a !important; box-shadow: 0 0 0 3px rgba(201,106,90,.22); }
+  .havok-field-error .havok-tipo-seg { outline: 2px solid #c96a5a; outline-offset: 3px; border-radius: 10px; }
+  .havok-check-error { color: #e07b68; }
+  .havok-check-error .dot { border-color: #c96a5a !important; box-shadow: 0 0 0 3px rgba(201,106,90,.22); }
+  .havok-field-hint { display: none; font-size: 11.5px; color: #e07b68; margin-top: 4px; }
+  .havok-field-error .havok-field-hint { display: block; }
+  .havok-modal-overlay { position: fixed; inset: 0; z-index: 1000; overflow-y: auto; background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .havok-modal { max-width: 440px; width: 100%; border-color: #c96a5a !important; position: relative; }
+  .havok-modal-close { position: absolute; top: 10px; right: 12px; background: none; border: 0; color: var(--color-neutral-400); font-size: 22px; line-height: 1; cursor: pointer; padding: 4px; }
+  .havok-modal-close:hover { color: var(--color-neutral-100); }
+  .havok-modal ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--color-neutral-200); }
 </style>
 </helmet>
 
@@ -268,7 +281,7 @@
                 <div style="color:var(--color-neutral-500);">{{ row.email }}</div>
               </td>
               <td style="font-size:12.5px;white-space:nowrap;">
-                <div>{{ row.emNombre }} <span style="color:var(--color-neutral-500);">({{ row.emRelacion }})</span></div>
+                <div>{{ row.emNombre }} <span style="color:var(--color-neutral-500);">{{ row.emRelacionLabel }}</span></div>
                 <div style="color:var(--color-neutral-500);">{{ row.emTelefono }}</div>
               </td>
               <td style="font-size:12.5px;white-space:nowrap;">
@@ -733,6 +746,22 @@
 
 <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
 <div>
+        <sc-if value="{{ showMissingModal }}" hint-placeholder-val="{{ false }}">
+          <div class="havok-modal-overlay" onClick="{{ onMissingOverlayClick }}">
+            <div class="card elev-md havok-modal" role="alertdialog" aria-modal="true" aria-labelledby="havok-modal-title" style="padding:var(--space-8) var(--space-6) var(--space-6);gap:var(--space-4);">
+              <button type="button" class="havok-modal-close" onClick="{{ closeMissingModal }}" aria-label="Cerrar">×</button>
+              <div class="card-kicker" style="color:#e07b68;">Faltan datos</div>
+              <h3 id="havok-modal-title" style="margin:0;">Completá estos campos para enviar la inscripción</h3>
+              <ul>
+                <sc-for list="{{ missingLabels }}" as="lbl" hint-placeholder-count="3">
+                  <li>{{ lbl }}</li>
+                </sc-for>
+              </ul>
+              <p class="text-muted" style="font-size:12.5px;margin:0;">Al cerrar este mensaje, los campos que faltan quedan marcados en rojo.</p>
+              <button type="button" class="btn btn-primary btn-block" onClick="{{ closeMissingModal }}">Entendido</button>
+            </div>
+          </div>
+        </sc-if>
   <header class="nav" style="position:sticky;top:0;z-index:20;background:color-mix(in srgb, var(--color-bg) 90%, transparent);backdrop-filter:blur(8px);max-width:1180px;margin:0 auto;padding-left:var(--space-6);padding-right:var(--space-6);">
     <div class="nav-brand">HAVOK - Airsoft Team</div>
     <a href="#nosotros">Nosotros</a>
@@ -819,14 +848,14 @@
       </sc-if>
 
       <sc-if value="{{ notSubmitted }}" hint-placeholder-val="{{ true }}">
-      <form onSubmit="{{ onSubmit }}" class="card elev-md" style="padding:var(--space-8);gap:var(--space-6);">
+      <form onSubmit="{{ onSubmit }}" sc-camel-no-validate="{{ true }}" class="card elev-md" style="padding:var(--space-8);gap:var(--space-6);">
 
         <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
           <label>Dejar en blanco</label>
           <input type="text" name="website" value="{{ form.website }}" onChange="{{ onFieldChange }}" tabindex="-1" autocomplete="off">
         </div>
 
-        <div class="field">
+        <div class="{{ fe.tipo }}" data-campo="tipo">
           <label>Tipo de inscripción</label>
           <p style="color:var(--color-neutral-400);font-size:12.5px;margin:2px 0 var(--space-3);">Elegí una opción antes de continuar. Este dato no se puede cambiar después de enviar el formulario.</p>
           <div class="seg havok-tipo-seg" style="width:100%;">
@@ -841,6 +870,7 @@
               <span class="seg-desc">Te sumás de forma estable, con cuota mensual</span>
             </label>
           </div>
+          <div class="havok-field-hint">Elegí una de las dos opciones</div>
           <sc-if value="{{ tipoIsMiembro }}" hint-placeholder-val="{{ false }}">
             <div class="tag tag-accent" style="margin-top:var(--space-3);white-space:normal;padding:var(--space-2) var(--space-3);">La membresía tiene cuota mensual. El pago se coordina por transferencia o efectivo una vez aprobada tu inscripción.</div>
           </sc-if>
@@ -849,11 +879,11 @@
         <div>
           <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-neutral-500);margin-bottom:var(--space-3);">Datos personales</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
-            <div class="field" style="grid-column:span 2;"><label>Nombre y apellido</label><input class="input" name="nombre" value="{{ form.nombre }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
-            <div class="field"><label>DNI</label><input class="input" name="dni" value="{{ form.dni }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
-            <div class="field"><label>Edad</label><input class="input" type="number" name="edad" value="{{ form.edad }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
-            <div class="field"><label>Teléfono</label><input class="input" name="telefono" value="{{ form.telefono }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
-            <div class="field"><label>Email</label><input class="input" type="email" name="email" value="{{ form.email }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="{{ fe.nombre }}" data-campo="nombre" style="grid-column:span 2;"><label>Nombre y apellido</label><input class="input" name="nombre" value="{{ form.nombre }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">Completá este campo</div></div>
+            <div class="{{ fe.dni }}" data-campo="dni"><label>DNI</label><input class="input" name="dni" value="{{ form.dni }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">Completá este campo</div></div>
+            <div class="{{ fe.edad }}" data-campo="edad"><label>Edad</label><input class="input" type="number" name="edad" value="{{ form.edad }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">Completá este campo</div></div>
+            <div class="{{ fe.telefono }}" data-campo="telefono"><label>Teléfono</label><input class="input" name="telefono" value="{{ form.telefono }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">Completá este campo</div></div>
+            <div class="{{ fe.email }}" data-campo="email"><label>Email</label><input class="input" type="email" name="email" value="{{ form.email }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">{{ emailHint }}</div></div>
           </div>
         </div>
 
@@ -861,10 +891,10 @@
           <div class="card" style="background:var(--color-accent-900);gap:var(--space-3);">
             <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent-300);">Autorización de adulto responsable (menor de edad)</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
-              <div class="field"><label>Nombre del adulto responsable</label><input class="input" name="autNombre" value="{{ form.autNombre }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}"></div>
-              <div class="field"><label>DNI del adulto responsable</label><input class="input" name="autDni" value="{{ form.autDni }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}"></div>
+              <div class="{{ fe.autNombre }}" data-campo="autNombre"><label>Nombre del adulto responsable</label><input class="input" name="autNombre" value="{{ form.autNombre }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}"><div class="havok-field-hint">Completá este campo</div></div>
+              <div class="{{ fe.autDni }}" data-campo="autDni"><label>DNI del adulto responsable</label><input class="input" name="autDni" value="{{ form.autDni }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}"><div class="havok-field-hint">Completá este campo</div></div>
             </div>
-            <label class="radio" style="align-items:flex-start;">
+            <label class="{{ fc.autAceptado }}" data-campo="autAceptado" style="align-items:flex-start;">
               <input type="checkbox" name="autAceptado" checked="{{ form.autAceptado }}" onChange="{{ onFieldChange }}" required="{{ isMinor }}">
               <span class="dot" style="border-radius:4px;"></span>
               <span style="font-size:13px;">Autorizo la participación del menor en las actividades de la agrupación bajo mi responsabilidad.</span>
@@ -875,13 +905,13 @@
         <div>
           <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-neutral-500);margin-bottom:var(--space-3);">Contacto de emergencia</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-4);">
-            <div class="field"><label>Nombre</label><input class="input" name="emNombre" value="{{ form.emNombre }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
-            <div class="field"><label>Teléfono</label><input class="input" name="emTelefono" value="{{ form.emTelefono }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
-            <div class="field"><label>Relación</label><input class="input" name="emRelacion" value="{{ form.emRelacion }}" onChange="{{ onFieldChange }}" required="{{ true }}"></div>
+            <div class="{{ fe.emNombre }}" data-campo="emNombre"><label>Nombre</label><input class="input" name="emNombre" value="{{ form.emNombre }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">Completá este campo</div></div>
+            <div class="{{ fe.emTelefono }}" data-campo="emTelefono"><label>Teléfono</label><input class="input" name="emTelefono" value="{{ form.emTelefono }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">Completá este campo</div></div>
+            <div class="{{ fe.emRelacion }}" data-campo="emRelacion"><label>Relación</label><input class="input" name="emRelacion" value="{{ form.emRelacion }}" onChange="{{ onFieldChange }}" required="{{ true }}"><div class="havok-field-hint">Completá este campo</div></div>
           </div>
         </div>
 
-        <div class="field">
+        <div class="{{ fe.experiencia }}" data-campo="experiencia">
           <label>Experiencia en airsoft</label>
           <select class="input" name="experiencia" value="{{ form.experiencia }}" onChange="{{ onFieldChange }}" required="{{ true }}">
             <option value="">Seleccioná una opción</option>
@@ -890,6 +920,7 @@
             <option value="intermedio">Intermedio</option>
             <option value="avanzado">Avanzado</option>
           </select>
+          <div class="havok-field-hint">Elegí una opción</div>
         </div>
 
         <div>
@@ -901,7 +932,7 @@
           </div>
         </div>
 
-        <label class="radio" style="align-items:flex-start;border-top:1px solid var(--color-divider);padding-top:var(--space-6);">
+        <label class="{{ fc.reglamentoAceptado }}" data-campo="reglamentoAceptado" style="align-items:flex-start;border-top:1px solid var(--color-divider);padding-top:var(--space-6);">
           <input type="checkbox" name="reglamentoAceptado" checked="{{ form.reglamentoAceptado }}" onChange="{{ onFieldChange }}" required="{{ true }}">
           <span class="dot" style="border-radius:4px;"></span>
           <span style="font-size:14px;">Leí y acepto el <a href="#reglamento" onClick="{{ goToReglamento }}">reglamento y las normas de seguridad</a>, y deslindo a Havok Airsoft Team de responsabilidad por el uso indebido de equipamiento.</span>
@@ -910,6 +941,7 @@
         <sc-if value="{{ submitError }}" hint-placeholder-val="{{ false }}">
           <div class="tag tag-outline" style="color:#c96a5a;border-color:#c96a5a;">{{ submitError }}</div>
         </sc-if>
+
 
         <sc-if value="{{ notSubmitting }}" hint-placeholder-val="{{ true }}">
           <button type="submit" class="btn btn-primary btn-block" style="font-size:15px;padding:var(--space-4);">Confirmar inscripción</button>
@@ -996,6 +1028,15 @@ const REGLAS = [
   "Prohibido el uso de réplicas o munición distinta a BB's de 6mm de material plástico."
 ];
 
+// Valor de celda para mostrar en el panel. Si la planilla tiene un error de fórmula (#ERROR!, #NAME?, etc.)
+// se muestra un aviso entendible en vez del código de error.
+function celda(v) {
+  if (v === undefined || v === null) return "";
+  const t = String(v);
+  if (/^#(ERROR!|NAME\?|VALUE!|REF!|N\/A|DIV\/0!|NUM!)/.test(t)) return "⚠ dato ilegible (revisar planilla)";
+  return t;
+}
+
 function formatFecha(v) {
   if (!v) return "-";
   var d = new Date(v);
@@ -1025,6 +1066,43 @@ const emptyForm = () => ({
   reglamentoAceptado: false,
   website: ""
 });
+
+const CAMPOS_INSCRIPCION = [
+  { name: "tipo", label: "Tipo de inscripción (evento puntual o miembro)" },
+  { name: "nombre", label: "Nombre y apellido" },
+  { name: "dni", label: "DNI" },
+  { name: "edad", label: "Edad" },
+  { name: "telefono", label: "Teléfono" },
+  { name: "email", label: "Email" },
+  { name: "autNombre", label: "Nombre del adulto responsable", soloMenor: true },
+  { name: "autDni", label: "DNI del adulto responsable", soloMenor: true },
+  { name: "autAceptado", label: "Autorización del adulto responsable", soloMenor: true, check: true },
+  { name: "emNombre", label: "Nombre del contacto de emergencia" },
+  { name: "emTelefono", label: "Teléfono del contacto de emergencia" },
+  { name: "emRelacion", label: "Relación con el contacto de emergencia" },
+  { name: "experiencia", label: "Experiencia en airsoft" },
+  { name: "reglamentoAceptado", label: "Aceptar el reglamento y las normas de seguridad", check: true }
+];
+
+function emailValido(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
+}
+
+// Devuelve [{ name, label }] con los campos que faltan o están mal.
+function camposFaltantes(f) {
+  const isMinor = f.edad !== "" && Number(f.edad) < 18;
+  const out = [];
+  CAMPOS_INSCRIPCION.forEach(c => {
+    if (c.soloMenor && !isMinor) return;
+    const v = f[c.name];
+    let falta = c.check ? !v : !String(v || "").trim();
+    let label = c.label;
+    if (!falta && c.name === "email" && !emailValido(v)) { falta = true; label = "Email (el formato no es válido)"; }
+    if (!falta && c.name === "edad" && !(Number(v) > 0)) { falta = true; label = "Edad (tiene que ser un número)"; }
+    if (falta) out.push({ name: c.name, label });
+  });
+  return out;
+}
 
 const ROL_LABELS = { admin: "Admin", moderador: "Moderador", miembro: "Miembro" };
 const SESSION_STORAGE_KEY = "havokSession";
@@ -1067,6 +1145,9 @@ class Component extends DCLogic {
     page: "landing",
     carouselIndex: 0,
     form: emptyForm(),
+    missingFields: [],
+    showMissingModal: false,
+    highlightMissing: false,
     submitted: false,
     codigoGenerado: "",
     submitting: false,
@@ -1184,21 +1265,25 @@ class Component extends DCLogic {
 
   onFieldChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name === "tipo") {
-      this.setState(s => ({ form: { ...s.form, tipo: value } }));
-      return;
-    }
-    const v = type === "checkbox" ? checked : value;
-    this.setState(s => ({ form: { ...s.form, [name]: v } }));
+    const v = name === "tipo" ? value : (type === "checkbox" ? checked : value);
+    this.setState(s => {
+      const form = { ...s.form, [name]: v };
+      if (!s.highlightMissing) return { form };
+      const sigueFaltando = camposFaltantes(form).map(c => c.name);
+      return { form, missingFields: s.missingFields.filter(n => sigueFaltando.indexOf(n) !== -1) };
+    });
   };
 
   onSubmit = (e) => {
     e.preventDefault();
     const f = this.state.form;
     const isMinor = f.edad !== "" && Number(f.edad) < 18;
-    if (!f.tipo) return;
-    if (!f.reglamentoAceptado) return;
-    if (isMinor && !f.autAceptado) return;
+    const faltan = camposFaltantes(f);
+    if (faltan.length) {
+      this.setState({ missingFields: faltan.map(c => c.name), missingLabelsList: faltan.map(c => c.label), showMissingModal: true, highlightMissing: false });
+      return;
+    }
+    this.setState({ missingFields: [], highlightMissing: false });
 
     const expMap = { ninguna: "Ninguna", principiante: "Principiante", intermedio: "Intermedio", avanzado: "Avanzado" };
     const tipoLabel = f.tipo === "miembro" ? "Miembro" : "Evento puntual";
@@ -1247,6 +1332,7 @@ class Component extends DCLogic {
             emNombre: f.emNombre,
             emTelefono: f.emTelefono,
             emRelacion: f.emRelacion,
+            emRelacionLabel: f.emRelacion ? "(" + f.emRelacion + ")" : "",
             autNombre: isMinor ? f.autNombre : "",
             autDni: isMinor ? f.autDni : ""
           };
@@ -1265,9 +1351,27 @@ class Component extends DCLogic {
       });
   };
 
+  closeMissingModal = () => {
+    this.setState({ showMissingModal: false, highlightMissing: true });
+    const primero = this.state.missingFields[0];
+    if (!primero) return;
+    setTimeout(() => {
+      try {
+        const cont = document.querySelector('[data-campo="' + primero + '"]');
+        if (cont) cont.scrollIntoView({ behavior: "smooth", block: "center" });
+        const input = document.querySelector('[name="' + primero + '"]');
+        if (input && input.type !== "radio" && input.type !== "checkbox") input.focus({ preventScroll: true });
+      } catch (err) {}
+    }, 50);
+  };
+
+  onMissingOverlayClick = (e) => {
+    if (e.target === e.currentTarget) this.closeMissingModal();
+  };
+
   resetForm = () => {
     this.formOpenedAt = Date.now();
-    this.setState({ submitted: false, form: emptyForm(), codigoGenerado: "" });
+    this.setState({ submitted: false, form: emptyForm(), codigoGenerado: "", missingFields: [], highlightMissing: false, showMissingModal: false });
   };
 
   // ===================== Sesión (un solo ingreso para todos los roles) =====================
@@ -1524,14 +1628,15 @@ class Component extends DCLogic {
             estadoStyle: r.Estado === "Rechazado" ? "color:#c96a5a;border-color:#c96a5a;" : "",
             estadoFecha: formatFecha(r.FechaEstado),
             fechaEstadoRaw: r.FechaEstado || "",
-            dni: r.DNI || "",
-            telefono: r.Telefono || "",
-            email: r.Email || "",
-            emNombre: r.ContactoEmergenciaNombre || "",
-            emTelefono: r.ContactoEmergenciaTelefono || "",
-            emRelacion: r.ContactoEmergenciaRelacion || "",
-            autNombre: r.AutorizacionAdultoNombre || "",
-            autDni: r.AutorizacionAdultoDni || ""
+            dni: celda(r.DNI),
+            telefono: celda(r.Telefono),
+            email: celda(r.Email),
+            emNombre: celda(r.ContactoEmergenciaNombre),
+            emTelefono: celda(r.ContactoEmergenciaTelefono),
+            emRelacion: celda(r.ContactoEmergenciaRelacion),
+            emRelacionLabel: celda(r.ContactoEmergenciaRelacion) ? "(" + celda(r.ContactoEmergenciaRelacion) + ")" : "",
+            autNombre: celda(r.AutorizacionAdultoNombre),
+            autDni: celda(r.AutorizacionAdultoDni)
           })).reverse();
           this.setState({ inscripciones: mapped, adminDataLoading: false });
         } else {
@@ -2041,6 +2146,14 @@ class Component extends DCLogic {
     const isMinor = f.edad !== "" && Number(f.edad) < 18;
     const tipoIsEvento = f.tipo === "evento";
     const tipoIsMiembro = f.tipo === "miembro";
+    const marcar = this.state.highlightMissing ? this.state.missingFields : [];
+    const fe = {}, fc = {};
+    CAMPOS_INSCRIPCION.forEach(c => {
+      const err = marcar.indexOf(c.name) !== -1;
+      fe[c.name] = err ? "field havok-field-error" : "field";
+      fc[c.name] = err ? "radio havok-check-error" : "radio";
+    });
+    const emailHint = String(f.email || "").trim() ? "Revisá el formato del email (ej.: nombre@gmail.com)" : "Completá este campo";
 
     const totalMiembros = this.state.inscripciones.filter(r => r.tipoLabel === "Miembro").length;
     const totalEventos = this.state.inscripciones.filter(r => r.tipoLabel === "Evento puntual").length;
@@ -2209,6 +2322,13 @@ class Component extends DCLogic {
       tipoIsEvento,
       tipoIsMiembro,
       onFieldChange: this.onFieldChange,
+      fe,
+      fc,
+      emailHint,
+      showMissingModal: this.state.showMissingModal,
+      missingLabels: this.state.missingLabelsList || [],
+      closeMissingModal: this.closeMissingModal,
+      onMissingOverlayClick: this.onMissingOverlayClick,
       onSubmit: this.onSubmit,
       submitted: this.state.submitted,
       notSubmitted: !this.state.submitted,

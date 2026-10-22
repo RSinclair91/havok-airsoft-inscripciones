@@ -64,7 +64,7 @@ function doPost(e) {
       var hashNueva = hashPassword(passNueva, saltNueva);
       fichaSheetNueva.appendRow([
         usuarioNueva, 'miembro', inscripcionMatch.id, inscripcionMatch.nombre,
-        callsignNueva || inscripcionMatch.nombre, fotoNueva, '', 0,
+        textoSeguro_(callsignNueva || inscripcionMatch.nombre), fotoNueva, '', 0,
         hashNueva, saltNueva, 'Activo', new Date()
       ]);
       return ContentService.createTextOutput(JSON.stringify({result: 'ok'})).setMimeType(ContentService.MimeType.JSON);
@@ -88,8 +88,8 @@ function doPost(e) {
       }
       var sheetCompletar = getFichaSheet_();
       var fichaCompletar = ensureFichaForRole_(guardCompletar.auth.user, guardCompletar.auth.role);
-      if (callsignCompletar) sheetCompletar.getRange(fichaCompletar.rowNum, 5).setValue(callsignCompletar);
-      if (nombreCompletar) sheetCompletar.getRange(fichaCompletar.rowNum, 4).setValue(nombreCompletar);
+      if (callsignCompletar) sheetCompletar.getRange(fichaCompletar.rowNum, 5).setValue(textoSeguro_(callsignCompletar));
+      if (nombreCompletar) sheetCompletar.getRange(fichaCompletar.rowNum, 4).setValue(textoSeguro_(nombreCompletar));
       if (fotoCompletar) sheetCompletar.getRange(fichaCompletar.rowNum, 6).setValue(fotoCompletar);
       return ContentService.createTextOutput(JSON.stringify({result: 'ok'})).setMimeType(ContentService.MimeType.JSON);
     }
@@ -429,20 +429,20 @@ function doPost(e) {
     }
     nuevoCodigo = 'HVK-2026-' + String(maxNum + 1).padStart(4, '0'); }
     var now = new Date(); var nuevoId = Utilities.getUuid();
-    var nuevaFila = [now, nuevoCodigo, data.nombre || '', data.edad || '', data.tipo || '', data.experiencia || '', data.estado || 'Pendiente'];
+    var nuevaFila = [now, nuevoCodigo, textoSeguro_(data.nombre), textoSeguro_(data.edad), data.tipo || '', textoSeguro_(data.experiencia), data.estado || 'Pendiente'];
     if (fechaEstadoCol !== -1) {
       nuevaFila[fechaEstadoCol] = now;
-    var dniCol = headers.indexOf('DNI'); if (dniCol !== -1) { nuevaFila[dniCol] = data.dni || ''; }}
-    var telefonoCol = headers.indexOf('Telefono'); if (telefonoCol !== -1) { nuevaFila[telefonoCol] = data.telefono || ''; }
-    var emailCol = headers.indexOf('Email'); if (emailCol !== -1) { nuevaFila[emailCol] = data.email || ''; }
-    var emNombreCol = headers.indexOf('ContactoEmergenciaNombre'); if (emNombreCol !== -1) { nuevaFila[emNombreCol] = data.emNombre || ''; }
-    var emTelefonoCol = headers.indexOf('ContactoEmergenciaTelefono'); if (emTelefonoCol !== -1) { nuevaFila[emTelefonoCol] = data.emTelefono || ''; }
-    var emRelacionCol = headers.indexOf('ContactoEmergenciaRelacion'); if (emRelacionCol !== -1) { nuevaFila[emRelacionCol] = data.emRelacion || ''; }
+    var dniCol = headers.indexOf('DNI'); if (dniCol !== -1) { nuevaFila[dniCol] = textoSeguro_(data.dni); }}
+    var telefonoCol = headers.indexOf('Telefono'); if (telefonoCol !== -1) { nuevaFila[telefonoCol] = textoSeguro_(data.telefono); }
+    var emailCol = headers.indexOf('Email'); if (emailCol !== -1) { nuevaFila[emailCol] = textoSeguro_(data.email); }
+    var emNombreCol = headers.indexOf('ContactoEmergenciaNombre'); if (emNombreCol !== -1) { nuevaFila[emNombreCol] = textoSeguro_(data.emNombre); }
+    var emTelefonoCol = headers.indexOf('ContactoEmergenciaTelefono'); if (emTelefonoCol !== -1) { nuevaFila[emTelefonoCol] = textoSeguro_(data.emTelefono); }
+    var emRelacionCol = headers.indexOf('ContactoEmergenciaRelacion'); if (emRelacionCol !== -1) { nuevaFila[emRelacionCol] = textoSeguro_(data.emRelacion); }
 
-var autNombreCol = headers.indexOf('AutorizacionAdultoNombre'); if (autNombreCol !== -1) { nuevaFila[autNombreCol] = data.autNombre || ''; }
-var autDniCol = headers.indexOf('AutorizacionAdultoDni'); if (autDniCol !== -1) { nuevaFila[autDniCol] = data.autDni || ''; }
+var autNombreCol = headers.indexOf('AutorizacionAdultoNombre'); if (autNombreCol !== -1) { nuevaFila[autNombreCol] = textoSeguro_(data.autNombre); }
+var autDniCol = headers.indexOf('AutorizacionAdultoDni'); if (autDniCol !== -1) { nuevaFila[autDniCol] = textoSeguro_(data.autDni); }
 var autAceptadaCol = headers.indexOf('AutorizacionAceptada'); if (autAceptadaCol !== -1) { nuevaFila[autAceptadaCol] = data.autAceptado ? 'Si' : ''; }
-    if (idCol !== -1) { nuevaFila[idCol] = nuevoId; } sheet.appendRow(nuevaFila); if (!esMiembro) { var evSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Eventuales'); if (!evSheet) { evSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('Eventuales'); evSheet.appendRow(['Fecha', 'Nombre', 'Edad', 'Experiencia', 'VecesInscripto']); } var evValues = evSheet.getDataRange().getValues(); var nombreNormalizado = String(data.nombre || '').trim().toLowerCase(); var vecesInscripto = 1; if (nombreNormalizado !== '') { for (var vi = 1; vi < evValues.length; vi++) { var evNombre = String(evValues[vi][1] || '').trim().toLowerCase(); if (evNombre === nombreNormalizado) { vecesInscripto++; } } } evSheet.appendRow([now, data.nombre || '', data.edad || '', data.experiencia || '', vecesInscripto]); }
+    if (idCol !== -1) { nuevaFila[idCol] = nuevoId; } sheet.appendRow(nuevaFila); if (!esMiembro) { var evSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Eventuales'); if (!evSheet) { evSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('Eventuales'); evSheet.appendRow(['Fecha', 'Nombre', 'Edad', 'Experiencia', 'VecesInscripto']); } var evValues = evSheet.getDataRange().getValues(); var nombreNormalizado = String(textoSeguro_(data.nombre)).trim().toLowerCase(); var vecesInscripto = 1; if (nombreNormalizado !== '') { for (var vi = 1; vi < evValues.length; vi++) { var evNombre = String(evValues[vi][1] || '').trim().toLowerCase(); if (evNombre === nombreNormalizado) { vecesInscripto++; } } } evSheet.appendRow([now, textoSeguro_(data.nombre), textoSeguro_(data.edad), textoSeguro_(data.experiencia), vecesInscripto]); }
     try { var tipoLabel = data.tipo || (esMiembro ? 'Miembro' : 'Evento puntual'); var asunto = 'Nueva inscripcion Havok: ' + (data.nombre || '(sin nombre)') + ' (' + tipoLabel + ')'; var cuerpo = 'Nombre: ' + (data.nombre || '') + '\nTipo: ' + tipoLabel + (esMiembro ? ('\nCodigo: ' + nuevoCodigo) : '') + '\nEdad: ' + (data.edad || '') + '\nExperiencia: ' + (data.experiencia || '') + '\nFecha: ' + now; MailApp.sendEmail('s.c.roberto.rs@gmail.com', asunto, cuerpo); } catch (mailErr) {} return ContentService.createTextOutput(JSON.stringify({result: 'ok', codigo: nuevoCodigo})).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({result: 'error', message: err.message})).setMimeType(ContentService.MimeType.JSON);
@@ -956,4 +956,11 @@ function handleAuthActions_(data) {
   }
 
   return null;
+}
+
+// Google Sheets interpreta como formula todo lo que empieza con = + - @ (por ejemplo un telefono "+54 9 2966...")
+// y muestra #ERROR!. El apostrofe adelante obliga a guardarlo como texto; no se ve en la celda ni al leerlo.
+function textoSeguro_(v) {
+  var t = String(v === undefined || v === null ? '' : v);
+  return /^[=+\-@]/.test(t) ? "'" + t : t;
 }
